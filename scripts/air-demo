@@ -1,0 +1,9 @@
+#!/bin/zsh
+set -eu
+DEMO_ROOT="${0:A:h:h}"
+cd "$DEMO_ROOT"
+mkdir -p "$DEMO_ROOT/runtime.local/dimos"
+export DIMOS_RUN_LOG_DIR="$DEMO_ROOT/runtime.local/dimos"
+export PYTHONDONTWRITEBYTECODE=1
+export PYTHONPATH="$DEMO_ROOT/robot-bridge/src${PYTHONPATH:+:$PYTHONPATH}"
+exec "${MOONTOLOGY_ROBOT_PYTHON:-$HOME/moontology-robot/.venv/bin/python}" -m moontology_bridge.air_demo "$@"

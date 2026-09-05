@@ -19,6 +19,23 @@ dimOS 0.0.14+ also discovers the external blueprint as
 `moontology-bridge.websocket`. The dedicated launcher works with the currently
 installed stable dimOS 0.0.13 release.
 
+## Reasoning agent (dimOS)
+
+`scripts/air-demo agent` runs `moontology_bridge.agentic`: a dimOS blueprint whose
+`MoontologySkills` module lets an LLM observe the scene ontology, read measured
+robot status/hardware faults (with a per-sector LiDAR room summary), look through
+the camera, start the gated excavator mission, take bounded steps toward any map
+asset or region (`navigate_toward`), read the boot-time scene atlas (`scene_atlas`:
+mobility classes, H-01…H-08 reasoning labels, planned legs, pitfalls), compare the live
+scene with it (`scene_drift`), run the next pre-planned leg (`traverse_leg`) and STOP.
+Skills reach hardware only through the Air control API on
+`127.0.0.1:8766`; connect/calibrate/arm/stand stay operator CLI actions.
+Operator side: `scripts/air-demo preflight`, `atlas`, `drift`, `traverse` — see
+`docs/hackathon-runbook.md`.
+`--no-llm` exposes the tools over MCP (`http://127.0.0.1:9990/mcp`) for Cursor or
+Claude Code; `--model gpt-4o` (needs `OPENAI_API_KEY`) or `--model ollama:<name>`
+runs dimOS's own `McpClient` reasoning loop. Details: `docs/air-demo.md`.
+
 ## Safety defaults
 
 - `MOONTOLOGY_COMMANDS_ENABLED` defaults to false.
