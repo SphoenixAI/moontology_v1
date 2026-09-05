@@ -1,0 +1,178 @@
+:root {
+  color: #eef3f4;
+  background: #101317;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --panel: rgb(14 18 22 / 93%);
+  --border: rgb(255 255 255 / 13%);
+  --muted: #9ba6ae;
+  --accent: #63e6ca;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#go2-test {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+#go2-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  touch-action: none;
+}
+
+#go2-panel-host {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.go2-panel {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 17px;
+  overflow-y: auto;
+  color: #f2f5f6;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 20px 55px rgb(0 0 0 / 38%);
+  backdrop-filter: blur(14px);
+  pointer-events: auto;
+}
+
+.go2-panel h1 {
+  margin: 0 0 7px;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+}
+
+.go2-panel__source {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font: 0.7rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.go2-panel__section {
+  margin: 0 0 15px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.go2-panel__section h2 {
+  margin: 0 0 9px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.go2-range {
+  display: block;
+  margin: 0 0 8px;
+}
+
+.go2-range__header {
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  color: #cbd2d7;
+  font: 0.66rem/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.go2-range__header output {
+  flex: 0 0 auto;
+  color: #fff;
+}
+
+.go2-range input {
+  width: 100%;
+  margin: 5px 0 0;
+  accent-color: var(--accent);
+  cursor: ew-resize;
+}
+
+.go2-panel__reset {
+  width: 100%;
+  min-height: 35px;
+  color: #edf5f3;
+  background: rgb(99 230 202 / 10%);
+  border: 1px solid rgb(99 230 202 / 43%);
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+}
+
+.go2-panel__reset:hover {
+  background: rgb(99 230 202 / 17%);
+}
+
+#go2-status,
+.go2-back-link {
+  position: fixed;
+  left: 16px;
+  z-index: 8;
+  color: #d7dde1;
+  background: rgb(14 18 22 / 88%);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.72rem;
+}
+
+#go2-status {
+  bottom: 16px;
+  max-width: calc(100vw - 32px);
+  padding: 9px 12px;
+  white-space: pre-line;
+}
+
+.go2-status--ready {
+  color: var(--accent) !important;
+}
+
+.go2-status--error {
+  color: #ffb8ad !important;
+  border-color: rgb(255 105 86 / 50%) !important;
+}
+
+.go2-back-link {
+  top: 16px;
+  padding: 8px 10px;
+  text-decoration: none;
+}
+
+.go2-back-link:hover {
+  color: var(--accent);
+  border-color: rgb(99 230 202 / 43%);
+}
+
+@media (max-width: 720px) {
+  .go2-panel {
+    top: 58px;
+    max-height: calc(100vh - 130px);
+  }
+}
