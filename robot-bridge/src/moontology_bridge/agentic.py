@@ -31,6 +31,7 @@ from dimos.agents.skill_result import SkillResult
 from dimos.core.module import Module, ModuleConfig
 
 from .air_atlas import SceneAtlas
+from .ontology_reasoning import compact_asset, summarize_intelligence
 
 MISSION = 'Go inspect the lunar excavator and ready it for operations.'
 DEFAULT_MODEL = os.getenv('MOONTOLOGY_AGENT_MODEL', 'gpt-4o')
@@ -139,6 +140,8 @@ def summarize_observation(obs: dict) -> dict:
                         | {'distance_m': round(e['distance_from_robot'], 2) if isinstance(e.get('distance_from_robot'), (int, float)) else None,
                            'bearing_deg': round(math.degrees(e['bearing']), 1) if isinstance(e.get('bearing'), (int, float)) else None,
                            'world_position': e.get('world_position'),
+                           'semantic_state': compact_asset(e.get('semantic_state')),
+                           'animation_paused_by_ontology': e.get('animation_paused_by_ontology'),
                            'displacement_from_expected_units': round(displacement, 2) if isinstance(displacement, (int, float)) else None,
                            'mobile': e.get('mobility') in ('animated_in_place', 'patrol')})
     layout = obs.get('layout') or {}
@@ -149,6 +152,7 @@ def summarize_observation(obs: dict) -> dict:
         'map_ready': obs.get('map_ready'),
         'go2_pose': {k: (round(v, 3) if isinstance(v, float) else v) for k, v in pose.items()},
         'mission_state': obs.get('mission_state'),
+        'intelligence': summarize_intelligence(obs.get('intelligence')),
         'entities': entities,
         'map_physical_hold': robot_state.get('physicalHold'), 'map_blocked_reason': robot_state.get('blockedReason'),
         'unknown_areas': layout.get('unknownAreas'), 'obstacle_count': len(layout.get('obstacles') or []),

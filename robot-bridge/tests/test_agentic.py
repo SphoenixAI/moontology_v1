@@ -110,6 +110,16 @@ class FakeServers:
 
 
 class AgenticSkills(unittest.TestCase):
+    def test_cursor_observation_keeps_canonical_evidence(self):
+        asset = {'id': 'CABLE-ROVER-01', 'expectedState': 'DEPLOYING', 'reportedState': 'ACTIVE',
+                 'observedState': 'STALLED', 'authoritativeState': 'STALLED', 'provenance': 'DEMO'}
+        observation = {**OBSERVATION, 'intelligence': {'assets': {asset['id']: asset},
+                       'missionStatus': {'state': 'AT_RISK'}, 'history_counts': {'events': 50}}}
+        summary = summarize_observation(observation)
+        self.assertEqual(summary['intelligence']['assets'][asset['id']], asset)
+        self.assertEqual(summary['intelligence']['missionStatus']['state'], 'AT_RISK')
+        self.assertEqual(summary['scene_session_id'], observation['scene_session_id'])
+
     def test_observation_summary_is_compact_and_semantic(self):
         summary = summarize_observation(OBSERVATION)
         entity = summary['entities'][0]

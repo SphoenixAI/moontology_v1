@@ -59,6 +59,22 @@ transport assets; actual collection and discovery rates remain separate
 
 ## Existing relay and consumer boundary
 
+**Selected reasoning architecture: GPT Terra in Cursor.** Cursor is the reasoning
+client of the existing `dimos-moontology` MCP server at
+`http://127.0.0.1:9990/mcp`, as configured in `.cursor/mcp.json`. Use the existing
+MCP-only agent mode (`agent --no-llm`); select Terra in Cursor itself. The Python
+`DEFAULT_MODEL` option applies only to the separate in-process LLM mode and does
+not select Cursor's model. Do not run a second reasoner or physical controller.
+
+Terra reads `observe_scene` and `robot_status`, explains contradictions, plans
+the next inspection and calls allowed bounded skills. The `observe_scene`
+summary preserves `intelligence`, all four asset states, provenance, resource
+and dependency consequences, trust, holds and recent evidence. Model conclusions
+do not become measured observations or override deterministic authority.
+dimOS still owns perception, navigation, execution and safety gates. After
+changing Python tool code, the existing MCP process must load that version;
+editing this file does not hot-reload an already-running server.
+
 The inspected checkout uses the consolidated **Air loopback** relay:
 
 `http://127.0.0.1:5173/api/map`
