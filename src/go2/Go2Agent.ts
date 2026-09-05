@@ -48,6 +48,7 @@ export class Go2Agent implements Go2MotionTarget {
   private readonly forward = new Vector3();
   private readonly previousPosition = new Vector3();
   private readonly frameDisplacement = new Vector3();
+  private readonly visualContactBounds = new Box3();
   private visualYOffset = 0;
   private motionResolver: ((from: Vector3, requested: Vector3) => Vector3) | null = null;
   private previousYaw: number;
@@ -163,6 +164,14 @@ export class Go2Agent implements Go2MotionTarget {
       angularVelocity,
       deltaSeconds,
     });
+    // Gait can extend a toe below the neutral calibration. Lift only the
+    // visual wrapper; AgentRoot remains the navigation/telemetry authority.
+    this.object.updateWorldMatrix(true, true);
+    this.visualContactBounds.setFromObject(this.visualRig);
+    const floorY = this.agentRoot.getWorldPosition(this.forward).y;
+    const penetration = floorY - this.visualContactBounds.min.y;
+    const parentScaleY = this.object.getWorldScale(this.forward).y;
+    if (penetration > 0 && parentScaleY > 0) this.visualRig.position.y += penetration / parentScaleY;
 
     this.previousPosition.copy(this.agentRoot.position);
     this.previousYaw = this.agentRoot.rotation.y;

@@ -270,6 +270,7 @@ export const loadWorld = async ({
 
   const layout = activeMode === 'marble' && collider && config.layout
     ? new WorldLayout(config.layout, worldRoot, collider) : null;
+  if (layout?.supportFloor) criticalGameplayColliders.add(layout.supportFloor);
 
   return {
     layout,
@@ -284,6 +285,7 @@ export const loadWorld = async ({
     fallbackReason,
     setColliderVisible,
     dispose: () => {
+      layout?.dispose();
       splat?.dispose();
       sparkRenderer?.dispose();
       colliderMaterial?.dispose();

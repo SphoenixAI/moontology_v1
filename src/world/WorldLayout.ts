@@ -1,4 +1,4 @@
-import { Vector3, type Object3D } from 'three';
+import { BoxGeometry, Mesh, MeshBasicMaterial, Vector3, type Object3D } from 'three';
 import type { LayoutDefinition, LayoutRegion, Point2 } from '../levels/sceneLayouts';
 import { SurfaceSampler } from './SurfaceSampler';
 
@@ -22,13 +22,28 @@ export class WorldLayout {
   readonly definition: LayoutDefinition;
   private readonly root: Object3D;
   private readonly sampler: SurfaceSampler;
+  readonly supportFloor: Mesh<BoxGeometry, MeshBasicMaterial> | null;
   private obstacles: LayoutObstacle[] = [];
   private obstacleRevision = 0;
   private robotState: { position: number[]; regionId: string | null; blocked: string | null; physicalHold: string | null; rejectedTelemetryPose: number[] | null } | null = null;
   setRobotState(state: NonNullable<WorldLayout['robotState']>): void { this.robotState = state; }
   constructor(definition: LayoutDefinition, root: Object3D, collider: Object3D) {
     this.definition = definition; this.root = root; this.sampler = new SurfaceSampler(collider, root);
+    const floor = definition.supportFloor;
+    this.supportFloor = null;
+    if (floor) {
+      const [x0, z0, x1, z1] = floor.bounds;
+      this.supportFloor = new Mesh(new BoxGeometry(x1 - x0, floor.depth, z1 - z0),
+        new MeshBasicMaterial({ visible: false, colorWrite: false, depthWrite: false }));
+      this.supportFloor.name = `${definition.id}-invisible-support-floor`;
+      this.supportFloor.position.set((x0 + x1) / 2, floor.topY - floor.depth / 2, (z0 + z1) / 2);
+      this.supportFloor.visible = false;
+      this.supportFloor.userData.authoritativeGameplayCollision = true;
+      this.supportFloor.userData.worldCollision = true;
+      this.supportFloor.raycast = () => {};
+    }
   }
+  dispose(): void { this.supportFloor?.geometry.dispose(); this.supportFloor?.material.dispose(); this.supportFloor?.removeFromParent(); }
   setObstacles(obstacles: LayoutObstacle[]): void {
     if (JSON.stringify(this.obstacles) === JSON.stringify(obstacles)) return;
     this.obstacles = obstacles; this.obstacleRevision++;
@@ -48,7 +63,11 @@ export class WorldLayout {
       const obstacle = this.obstacles.find(o => containsPoint(x, z, o.polygon));
       if (obstacle) return deny(`Occupied by ${obstacle.id}`);
     }
-    const support = region.floorY === undefined ? this.sampler.sample(local.x, local.z) : { y: region.floorY, slope: 0 };
+    const floor = this.definition.supportFloor;
+    if (floor && (local.x < floor.bounds[0] || local.x > floor.bounds[2] || local.z < floor.bounds[1] || local.z > floor.bounds[3]))
+      return deny('Outside the support floor');
+    const support = floor ? { y: Math.max(floor.topY, region.floorY ?? floor.topY), slope: 0 }
+      : region.floorY === undefined ? this.sampler.sample(local.x, local.z) : { y: region.floorY, slope: 0 };
     if (!support) return deny('Floor measurement unavailable');
     if (support.slope > Math.PI * 28 / 180) return deny('Surface exceeds the surveyed slope limit');
     const height = this.root.localToWorld(new Vector3(local.x, support.y, local.z)).y;
@@ -66,11 +85,15 @@ export class WorldLayout {
   }
   /** Swept check at 5 cm intervals prevents tunneling through thin boundaries. */
   constrain(from: Vector3, requested: Vector3, radius = .4): { position: Vector3; blocked: string | null } {
-    if (![from.x, from.z, requested.x, requested.z].every(Number.isFinite)) return { position: from.clone(), blocked: 'Invalid map pose' };
-    const distance = Math.hypot(requested.x - from.x, requested.z - from.z);
-    if (distance > 20) return { position: from.clone(), blocked: 'Map displacement requires explicit placement' };
-    const steps = Math.max(1, Math.ceil(distance / .05));
     const position = from.clone();
+    // Correct even a rejected move or a downward telemetry/reset pose. Never
+    // return a below-floor starting Y just because an obstacle blocked X/Z.
+    const startSupport = this.sample(from.x, from.z, false);
+    if (startSupport.height !== null) position.y = startSupport.height;
+    if (![from.x, from.z, requested.x, requested.z].every(Number.isFinite)) return { position, blocked: 'Invalid map pose' };
+    const distance = Math.hypot(requested.x - from.x, requested.z - from.z);
+    if (distance > 20) return { position, blocked: 'Map displacement requires explicit placement' };
+    const steps = Math.max(1, Math.ceil(distance / .05));
     for (let i = 1; i <= steps; i++) {
       const next = from.clone().lerp(requested, i / steps);
       const support = this.footprint(next.x, next.z, radius);
@@ -84,8 +107,12 @@ export class WorldLayout {
     return {
       world: this.definition.id, layoutRevision: this.definition.revision, obstacleRevision: this.obstacleRevision,
       source: 'PRESENTATION_MAP_AUTHORED_LAYOUT', physicalValidation: 'UNVERIFIED',
-      unknownAreas: 'BLOCKED', unregisteredSplatFeatures: 'UNKNOWN', heightSource: 'WORLD_LABS_COLLIDER_MEASUREMENTS',
-      regions: this.definition.regions.map(r => ({ ...r, polygon: r.polygon.map(([x,z]) => {
+      unknownAreas: 'BLOCKED', unregisteredSplatFeatures: 'UNKNOWN',
+      heightSource: this.supportFloor ? 'INVISIBLE_CONTINUOUS_SUPPORT_FLOOR' : 'WORLD_LABS_COLLIDER_MEASUREMENTS',
+      regions: this.definition.regions.map(r => ({ ...r,
+        ...(this.definition.supportFloor && r.kind !== 'building' ? {
+          floorY: this.root.localToWorld(new Vector3(0, Math.max(this.definition.supportFloor.topY, r.floorY ?? this.definition.supportFloor.topY), 0)).y,
+        } : {}), polygon: r.polygon.map(([x,z]) => {
         const point = this.root.localToWorld(new Vector3(x, 0, z)); return [point.x, point.z];
       }), validActions: r.kind === 'building' ? [] : r.kind === 'doorway' ? ['approach', 'enter_world_2'] : ['walk'] })),
       robotState: this.robotState ? { ...this.robotState, position: [...this.robotState.position], rejectedTelemetryPose: this.robotState.rejectedTelemetryPose?.slice() ?? null } : null,

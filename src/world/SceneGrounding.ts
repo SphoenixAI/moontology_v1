@@ -7,6 +7,7 @@ interface Contact {
   asset: LoadedAsset;
   feet: Object3D[];
   footOffset: number;
+  normalizationY: number;
   bottomOffset: number;
   halfX: number;
   halfZ: number;
@@ -40,7 +41,7 @@ export class SceneGrounding {
         if (!Number.isFinite(box.min.y)) { this.issues.set(id, 'Contact geometry unavailable'); continue; }
         const root = asset.root.getWorldPosition(new Vector3());
         const feetY = feet.length ? Math.min(...feet.map(foot => foot.getWorldPosition(new Vector3()).y)) : 0;
-        contact = { asset, feet, footOffset: feetY - box.min.y, bottomOffset: root.y - box.min.y,
+        contact = { asset, feet, footOffset: feetY - box.min.y, normalizationY: asset.model.parent!.position.y, bottomOffset: root.y - box.min.y,
           halfX: Math.max(.15, (box.max.x - box.min.x) / 2), halfZ: Math.max(.15, (box.max.z - box.min.z) / 2),
           centerX: (box.max.x + box.min.x) / 2 - root.x, centerZ: (box.max.z + box.min.z) / 2 - root.z,
           key: '', accepted: null, acceptedRotation: [], acceptedScale: [], obstacle: null };
@@ -80,10 +81,14 @@ export class SceneGrounding {
       asset.root.position.copy(asset.root.parent!.worldToLocal(root.clone()));
       asset.root.updateMatrixWorld(true);
       if (contact.feet.length) {
-        const sole = Math.min(...contact.feet.map(foot => foot.getWorldPosition(new Vector3()).y)) - contact.footOffset;
         const normalization = asset.model.parent!;
+        // Re-solve from the original wrapper every frame, never integrate an
+        // animation correction into the next frame's starting offset.
+        normalization.position.y = contact.normalizationY;
+        asset.root.updateMatrixWorld(true);
+        const sole = Math.min(...contact.feet.map(foot => foot.getWorldPosition(new Vector3()).y)) - contact.footOffset;
         const scaleY = normalization.parent!.getWorldScale(new Vector3()).y;
-        normalization.position.y += (ground - sole) / scaleY;
+        if (scaleY > 0) normalization.position.y = contact.normalizationY + (ground - sole) / scaleY;
         asset.root.updateMatrixWorld(true);
       }
       contact.accepted = root.clone();

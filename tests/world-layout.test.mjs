@@ -15,17 +15,50 @@ const bytes = fs.readFileSync('public/worldlabs/lunar-base/Moon Base with Habita
 const gltf = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
 const root = new Group(); root.add(gltf.scene);
 const layout = new WorldLayout(SCENE_1_LAYOUT, root, gltf.scene);
+async function originalGeometry(src) {
+  // Ignore materials only in this Node test; the on-disk asset stays intact.
+  const source=fs.readFileSync('public'+decodeURIComponent(src));
+  const jsonLength=source.readUInt32LE(12), doc=JSON.parse(source.subarray(20,20+jsonLength));
+  for(const mesh of doc.meshes??[])for(const primitive of mesh.primitives)delete primitive.material;
+  delete doc.images;delete doc.textures;delete doc.materials;delete doc.samplers;
+  let js=Buffer.from(JSON.stringify(doc));js=Buffer.concat([js,Buffer.alloc((4-js.length%4)%4,32)]);
+  const binary=source.subarray(20+jsonLength), out=Buffer.alloc(20+js.length+binary.length);
+  source.copy(out,0,0,12);out.writeUInt32LE(out.length,8);out.writeUInt32LE(js.length,12);out.writeUInt32LE(0x4e4f534a,16);js.copy(out,20);binary.copy(out,20+js.length);
+  return new GLTFLoader().parseAsync(out.buffer,'');
+}
 
-test('actual collider gives local floor height instead of zero at every demo stop', () => {
+test('one invisible floor supports every demo stop despite collider dips', () => {
   for (const stop of SCENE_1_STOPS) {
     const support = layout.sample(stop.position[0], stop.position[2]);
     assert.ok(support.traversable, `${stop.id}: ${support.reason}`);
-    assert.ok(support.height < -.35 && support.height > -.9, `${stop.id}: ${support.height}`);
+    assert.equal(support.height, SCENE_1_LAYOUT.supportFloor.topY, stop.id);
     assert.ok(layout.footprint(stop.stop[0], stop.stop[2]).traversable, stop.id);
   }
   assert.equal(layout.sample(-9.4,5).traversable, false, 'old excavator position is inside the building');
   const p = EQUIPMENT_STAGING['EXC-02'].position;
   assert.ok(layout.footprint(p[0],p[2],1.6).traversable, 'new excavator footprint clears the building');
+});
+test('repeated walking and downward poses cannot sink, including rejected moves', () => {
+  const empty = new WorldLayout(SCENE_1_LAYOUT, new Group(), new Group());
+  assert.equal(empty.supportFloor.visible, false);
+  assert.equal(empty.supportFloor.material.visible, false);
+  assert.equal(empty.supportFloor.material.depthWrite, false);
+  empty.supportFloor.geometry.computeBoundingBox();
+  assert.ok(Math.abs(empty.supportFloor.position.y + empty.supportFloor.geometry.boundingBox.max.y - SCENE_1_LAYOUT.supportFloor.topY)<1e-6);
+  let p = new Vector3(1.5, -20, 5);
+  for (let lap = 0; lap < 50; lap++) {
+    for (const [x,z] of [[3.7,2.3],[-4.5,1.4],[-3.4,-4.9],[.6,-5.4],[3,-9],[1.5,5]]) {
+      const result = empty.constrain(p, new Vector3(x, -100-lap, z));
+      assert.equal(result.blocked, null); p = result.position;
+      assert.equal(p.y, SCENE_1_LAYOUT.supportFloor.topY);
+    }
+  }
+  empty.setObstacles([{id:'crate',polygon:[[1,4],[2,4],[2,6],[1,6]]}]);
+  const blocked = empty.constrain(new Vector3(1.5,-50,5), new Vector3(1.5,-100,5));
+  assert.ok(blocked.blocked); assert.equal(blocked.position.y, SCENE_1_LAYOUT.supportFloor.topY);
+  assert.equal(empty.observation().heightSource, 'INVISIBLE_CONTINUOUS_SUPPORT_FLOOR');
+  assert.ok(empty.observation().regions.filter(r=>r.kind!=='building').every(r=>r.floorY===SCENE_1_LAYOUT.supportFloor.topY));
+  empty.dispose();
 });
 test('walls, unknown areas and swept large moves block; door corridor stays accessible', () => {
   assert.equal(layout.sample(-5,-19).traversable, false);
@@ -70,15 +103,7 @@ test('actual equipment footprints are grounded and clear building shells', async
   const registry = new AssetRegistry(level1.assets), scene = new Group();
   const { Box3 } = await import('three');
   for (const config of level1.assets.filter(a=>a.src && a.type !== 'humanoid')) {
-    // Parse original geometry with materials omitted for Node; never rewrite assets.
-    const source=fs.readFileSync('public'+decodeURIComponent(config.src));
-    const jsonLength=source.readUInt32LE(12), doc=JSON.parse(source.subarray(20,20+jsonLength));
-    for(const mesh of doc.meshes??[])for(const primitive of mesh.primitives)delete primitive.material;
-    delete doc.images;delete doc.textures;delete doc.materials;delete doc.samplers;
-    let js=Buffer.from(JSON.stringify(doc));js=Buffer.concat([js,Buffer.alloc((4-js.length%4)%4,32)]);
-    const binary=source.subarray(20+jsonLength), out=Buffer.alloc(20+js.length+binary.length);
-    source.copy(out,0,0,12);out.writeUInt32LE(out.length,8);out.writeUInt32LE(js.length,12);out.writeUInt32LE(0x4e4f534a,16);js.copy(out,20);binary.copy(out,20+js.length);
-    const model=(await new GLTFLoader().parseAsync(out.buffer,'')).scene;
+    const model=(await originalGeometry(config.src)).scene;
     const entity=new Group();entity.position.fromArray(config.position);entity.rotation.set(...config.rotation);entity.add(model);scene.add(entity);
     scaleObjectToLength(entity,config.targetLengthMeters);placeObjectBottomAtY(entity,0);
     registry.register({config,root:entity,model,normalization:null,animations:[],animation:null});
@@ -104,6 +129,38 @@ test('actual equipment footprints are grounded and clear building shells', async
   assert.ok(!layout.observation().obstacles.some(o=>o.id==='EXC-02'));
   layout.setObstacles([]);
 });
+test('original humanoid animation geometry remains above support through each action', async () => {
+  const { level1 } = await server.ssrLoadModule('/src/levels/level1.ts');
+  const { AssetLoader } = await server.ssrLoadModule('/src/assets/AssetLoader.ts');
+  const { HumanoidFleet } = await server.ssrLoadModule('/src/humanoids/HumanoidFleet.ts');
+  const { AnimationSystem } = await server.ssrLoadModule('/src/animation/AnimationSystem.ts');
+  const { AssetRegistry } = await server.ssrLoadModule('/src/assets/AssetRegistry.ts');
+  const { SceneGrounding } = await server.ssrLoadModule('/src/world/SceneGrounding.ts');
+  const { Box3 } = await import('three');
+  const sources = new Map();
+  for (const config of level1.assets.filter(a=>a.type==='humanoid')) {
+    const registry=new AssetRegistry([config]), scene=new Group(), fleet=new HumanoidFleet(1), animations=new AnimationSystem();
+    scene.add(fleet.root);
+    const loader=new AssetLoader(scene, registry, animations, fleet);
+    if (!sources.has(config.src)) {
+      const gltf=await originalGeometry(config.src);sources.set(config.src,{root:gltf.scene,animations:gltf.animations,instanceCount:0});
+    }
+    loader.getSource = async () => sources.get(config.src);
+    const asset=await loader.load(config), binding=asset.animation;
+    binding.action.reset().play();binding.mixer.update(0);
+    const grounding=new SceneGrounding(registry,layout);grounding.update();
+    const scale=asset.model.parent.scale.clone();
+    for(let frame=0;frame<=24;frame++) {
+      binding.action.reset().play();binding.mixer.setTime(binding.clip.duration * frame/24 / (config.animationSpeed??1));
+      grounding.update();
+      const bottom=new Box3().setFromObject(asset.model,true).min.y;
+      assert.ok(bottom>=SCENE_1_LAYOUT.supportFloor.topY-.015, `${config.id} frame ${frame}: sole ${bottom}`);
+      assert.equal(asset.root.position.y,SCENE_1_LAYOUT.supportFloor.topY);
+      assert.deepEqual(asset.model.parent.scale,scale);
+    }
+    layout.setObstacles([]);animations.dispose();loader.dispose();
+  }
+});
 test('animated foot contact stays grounded without changing source scale or root X/Z', async () => {
   const { SceneGrounding } = await server.ssrLoadModule('/src/world/SceneGrounding.ts');
   const { AssetRegistry } = await server.ssrLoadModule('/src/assets/AssetRegistry.ts');
@@ -123,5 +180,11 @@ test('animated foot contact stays grounded without changing source scale or root
   feet[0].position.y+=.6;feet[1].position.y+=.2;grounding.update();
   assert.ok(Math.abs(new Box3().setFromObject(model).min.y-ground)<1e-6);
   assert.equal(entity.position.x,1.5);assert.equal(entity.position.z,5);assert.deepEqual(model.scale,scale);
+  for (let i=0;i<1200;i++) {
+    feet[0].position.y=.7+Math.max(0,Math.sin(i/10))*.6;
+    feet[1].position.y=.7+Math.max(0,-Math.sin(i/10))*.6;
+    entity.position.y=-100-i; grounding.update();
+    assert.ok(Math.abs(new Box3().setFromObject(model).min.y-ground)<1e-6);
+  }
   layout.setObstacles([]);
 });
