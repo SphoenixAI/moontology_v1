@@ -45,6 +45,14 @@ export class SceneRehearsalPanel {
       button.onclick = action; actions.append(button);
     }
     this.panel.body.append(actions);
+    const cableDemo = document.createElement('button');
+    cableDemo.textContent = 'Run cable stall demo · simulated';
+    cableDemo.title = 'Six seconds of simulated independent observations. No physical movement.';
+    cableDemo.onclick = () => {
+      try { this.ontology.startCableDemo(); this.detail.textContent = 'SIMULATED cable evidence running; see Operational Intelligence for the comparison and consequences.'; }
+      catch (e) { this.detail.textContent = e instanceof Error ? e.message : 'Demo unavailable'; }
+    };
+    this.panel.body.append(cableDemo);
     const list = document.createElement('div'); list.className = 'rehearsal-stops';
     for (const [index, stop] of SCENE_1_STOPS.entries()) {
       const button = document.createElement('button');
@@ -75,7 +83,7 @@ export class SceneRehearsalPanel {
     for (const id of this.expectedIds) {
       const binding = this.registry.get(id)?.animation;
       if (!binding) continue;
-      setLoopingPlayback(binding, paused, reset);
+      setLoopingPlayback(binding, paused || !this.ontology.canAnimate(id), reset);
       playback.push(`${id}: ${binding.action.isRunning() ? 'playing' : 'paused'} · ${binding.action.time.toFixed(1)} s`);
     }
     this.animationButton.textContent = paused ? 'Resume humanoid animations' : 'Pause humanoid animations';

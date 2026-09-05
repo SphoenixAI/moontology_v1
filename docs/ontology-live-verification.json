@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-09-05T19:16:04.295Z",
+  "source": "authoritative presentation browser via existing Vite relay",
+  "connection": "http://127.0.0.1:5173/api/map",
+  "consumer": "current repo MapClient (local read; not Laptop #2)",
+  "presentation_session": "7c8e9104-34b8-4a61-9ca9-e193e5333e8e",
+  "consumer_session": "7c8e9104-34b8-4a61-9ca9-e193e5333e8e",
+  "presentation_scene_revision": 18,
+  "consumer_scene_revision": 18,
+  "observation_sequences": [
+    394,
+    406
+  ],
+  "map_ready": true,
+  "cable": {
+    "expectedState": "DEPLOYING",
+    "reportedState": "ACTIVE",
+    "observedState": "STALLED",
+    "authoritativeState": "STALLED",
+    "provenance": "DEMO"
+  },
+  "animation_paused_by_ontology": true,
+  "downstream_at_risk": [
+    "CableDeployment-17",
+    "CableRun-17",
+    "PowerNode-B",
+    "Habitat-2"
+  ],
+  "history_counts": {
+    "observations": 36,
+    "events": 64,
+    "discrepancies": 1
+  },
+  "history_first_page_records": 24,
+  "physical_motion_issued": false,
+  "physical_semantic_connection_verified": false,
+  "virtual_pose_stationary_during_check": true
+}

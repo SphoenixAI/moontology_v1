@@ -37,14 +37,14 @@ export const createLunarBaseOntologySeed = (level: LevelConfig): OntologySeed =>
   }
   objects.push(
     { id: 'GO2-01', type: 'Go2', label: 'Unitree Go2', capabilities: ['Inspectable', 'Taskable', 'MobileAsset'],
-      properties: { status: 'STANDBY', health: 'NOMINAL', position: point(level.go2Agent?.position ?? [0, 0, 0]), role: 'Route observer', verificationStatus: 'NOT_REQUIRED', skills: ['PHYSICAL_INSPECTION'] } },
+      properties: { status: 'STANDBY', health: 'NOMINAL', position: point(level.go2Agent?.position ?? [0, 0, 0]), role: 'Independent mobile physical operations supervisor', verificationStatus: 'NOT_REQUIRED', skills: ['PHYSICAL_INSPECTION'] } },
     { id: 'CableDeployment-17', type: 'Task', label: 'Staged cable run', capabilities: [], properties: { status: 'PLANNED', expectedState: 'CONNECTOR_INSPECTED' } },
     { id: 'CableRun-17', type: 'CableRun', label: 'Cable inspection run', capabilities: ['Inspectable'], properties: { status: 'PARTIAL', position: point([-6.5, 0, -6.7]), role: 'Staged cable visual' } },
     { id: 'Habitat-2', type: 'Habitat', label: 'World 2 habitat', capabilities: ['Inspectable'], properties: { status: 'AVAILABLE', position: point([-5, -0.7, -20]), role: 'Museum entrance', footprint: { width: 12, depth: 8 } } },
     { id: 'Route-Alpha', type: 'Route', label: 'Scene 1 demo route', capabilities: ['Inspectable'], properties: { status: 'OPEN', role: 'Inventory → sampling → cable → thermal → recovery → habitat' } },
   );
   relations.push(relation('GO2-01', 'routesThrough', 'Route-Alpha'), relation('CableRun-17', 'dependsOn', 'CableDeployment-17'),
-    relation('PowerNode-B', 'supplies', 'Habitat-2'), relation('Airlock-2A', 'dependsOn', 'Habitat-2'));
+    relation('CableDeployment-17', 'dependsOn', 'CABLE-ROVER-01'), relation('PowerNode-B', 'dependsOn', 'CableRun-17'), relation('PowerNode-B', 'supplies', 'Habitat-2'), relation('Airlock-2A', 'dependsOn', 'Habitat-2'));
   const objectIds = new Set(objects.map(object => object.id));
   return { mission: { id: 'LUNAR-OPS-01', label: 'Shackleton Mixed-Robot Base', scene: 'World Labs · Level 1',
     phase: 'SCENE 1 · GUIDED REHEARSAL', worldBounds: { minX: -17, maxX: 15, minZ: -23, maxZ: 10 } },

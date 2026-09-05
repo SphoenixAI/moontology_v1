@@ -113,7 +113,7 @@ export function mapRelayPlugin() {
         }
         const kind = path.slice('/api/map/'.length);
         if (!(['observation'].includes(kind) && req.method === 'GET') &&
-          !(['mission', 'interaction', 'reset', 'telemetry'].includes(kind) && req.method === 'POST'))
+          !(['mission', 'interaction', 'reset', 'telemetry', 'intelligence'].includes(kind) && req.method === 'POST'))
           return json(res, 404, { error: 'unknown_endpoint' });
         if (!owner || Date.now() - lastSeen > 1500)
           return json(res, 503, { error: 'authoritative_scene_unavailable', requires_observation: true });

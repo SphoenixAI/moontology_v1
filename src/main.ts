@@ -365,6 +365,12 @@ const renderLoopStarted = performanceGovernor.start((time) => {
   timer.update(time);
   const deltaSeconds = Math.min(timer.getDelta(), 0.1);
 
+  ontology.tickIntelligence();
+  const semanticHold = ontology.getMissionState().holdReasons[0] ?? null;
+  if (semanticHold && !physicalMapHold && go2TelemetryClient?.getState().telemetryActive) {
+    physicalMapHold = `Ontology safety hold: ${semanticHold}`;
+    go2TelemetryClient.api.stop();
+  }
   layoutRehearsal?.update();
   airlockRehearsal?.update(deltaSeconds);
   staticAssetSystem.update(deltaSeconds);
@@ -373,7 +379,7 @@ const renderLoopStarted = performanceGovernor.start((time) => {
     liveMapRelay?.state.tick();
     previousMapPosition.copy(go2Agent.agentRoot.position);
     go2Controller?.setExternalControlActive(
-      !!physicalMapHold || !!liveMapRelay?.state.ownsPose() || (go2TelemetryClient?.isDriving() ?? false) ||
+      !!semanticHold || !!physicalMapHold || !ontology.canAnimate('GO2-01') || !!liveMapRelay?.state.ownsPose() || (go2TelemetryClient?.isDriving() ?? false) ||
       airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading',
     );
     go2Controller?.update(deltaSeconds, go2Agent);
@@ -422,23 +428,31 @@ const renderLoopStarted = performanceGovernor.start((time) => {
     activeCalibration.id !== SCENE_1_CALIBRATION.id ||
       (airlockTransition && airlockTransition.getWorldPhase() !== 'scene1')
       ? 'Scene 1 rehearsal stopped for scene transition.'
-      : physicalMapHold ?? (sceneGrounding?.issues.size ? 'Placement blocked: ' + [...sceneGrounding.issues].map(([id, reason]) => `${id}: ${reason}`).join('; ') : null) ?? (!world?.layout ? 'Waiting for measured map boundaries.' : null) ?? (bridgeState?.telemetryActive && !bridgeState.robotConnected
+      : semanticHold ?? physicalMapHold ?? (sceneGrounding?.issues.size ? 'Placement blocked: ' + [...sceneGrounding.issues].map(([id, reason]) => `${id}: ${reason}`).join('; ') : null) ?? (!world?.layout ? 'Waiting for measured map boundaries.' : null) ?? (bridgeState?.telemetryActive && !bridgeState.robotConnected
         ? 'Robot telemetry lost. Resume after reconnection.'
         : null));
   backgroundTraffic?.update(timer.getDelta(), go2Agent?.agentRoot ?? null,
     activeCalibration.id === SCENE_1_CALIBRATION.id && (!airlockTransition || airlockTransition.getWorldPhase() === 'scene1') &&
     !physicalMapHold && !liveMapRelay?.state.isMissionHeld());
+  for (const { config, root } of registry.values()) {
+    root.userData.semanticPaused = !ontology.canAnimate(config.id);
+    root.userData.authoritativeState = ontology.getAssetState(config.id)?.authoritativeState;
+  }
   animations.update(deltaSeconds);
   if (activeCalibration.id === SCENE_1_CALIBRATION.id) sceneGrounding?.update();
   sceneEntityHighlighter.update();
   spatialSyncElapsed += deltaSeconds;
   if (spatialSyncElapsed >= 0.25) {
     spatialSyncElapsed = 0;
+    ontology.batch(() => {
     ontology.syncLayoutRegions();
+    ontology.syncSceneRegistry(registry.values().map(({ config, root }) => {
+      root.getWorldPosition(worldPosition);
+      return { id: config.id, type: config.type === 'humanoid' ? 'Humanoid' as const : 'Facility' as const,
+        label: config.role ?? config.id, position: { x: worldPosition.x, y: worldPosition.y, z: worldPosition.z } };
+    }));
     for (const { config, root } of registry.values()) {
-      if (!ontologyObjectIds.has(config.id)) {
-        continue;
-      }
+      ontologyObjectIds.add(config.id);
       ontology.updateSurface(config.id, root.userData.surfaceRegion ?? 'UNKNOWN', root.userData.layoutStatus ?? 'REGISTERED');
       root.getWorldPosition(worldPosition);
       ontology.updatePosition(config.id, {
@@ -456,6 +470,7 @@ const renderLoopStarted = performanceGovernor.start((time) => {
         z: worldPosition.z,
       });
     }
+    });
   }
   if (orbitControls.enabled) orbitControls.update();
   moonControlSystem?.update(deltaSeconds);
@@ -790,6 +805,7 @@ const bootstrap = async (): Promise<void> => {
           world = null;
         },
         canTrigger: () => {
+          if (!ontology.canAnimate('Airlock-2A')) return false;
           const state = go2TelemetryClient?.getState();
           return !document.hidden && !physicalMapHold && !!world?.layout && !(state?.telemetryActive && !state.robotConnected);
         },

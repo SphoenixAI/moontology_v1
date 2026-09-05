@@ -71,8 +71,8 @@ export class AnimationSystem {
   }
 
   update(deltaSeconds: number): void {
-    for (const { mixer } of this.bindings.values()) {
-      mixer.update(deltaSeconds);
+    for (const [root, { mixer }] of this.bindings) {
+      if (!root.userData.semanticPaused) mixer.update(deltaSeconds);
     }
   }
 

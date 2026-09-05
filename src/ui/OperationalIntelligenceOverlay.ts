@@ -141,6 +141,15 @@ export class OperationalIntelligenceOverlay {
   private snapshot: OntologySnapshot;
   private expanded = true;
   private collapsedSections = loadCollapsedSections();
+  private pointerHeld = false;
+  private renderPending = false;
+  private readonly beginInteraction = () => { this.pointerHeld = true; };
+  private readonly endInteraction = () => {
+    requestAnimationFrame(() => {
+      this.pointerHeld = false;
+      if (this.renderPending) { this.renderPending = false; this.render(); }
+    });
+  };
 
   constructor(host: HTMLElement, store: OntologyStore) {
     this.store = store;
@@ -163,6 +172,9 @@ export class OperationalIntelligenceOverlay {
     this.element = this.dock.root;
     this.expanded = !this.dock.isCollapsed;
     this.element.addEventListener('click', this.handleClick);
+    this.element.addEventListener('pointerdown', this.beginInteraction);
+    window.addEventListener('pointerup', this.endInteraction);
+    window.addEventListener('pointercancel', this.endInteraction);
     this.unsubscribeDock = this.dock.subscribe(() => {
       if (this.expanded === !this.dock.isCollapsed) {
         return;
@@ -180,13 +192,20 @@ export class OperationalIntelligenceOverlay {
     this.unsubscribe();
     this.unsubscribeDock();
     this.element.removeEventListener('click', this.handleClick);
+    this.element.removeEventListener('pointerdown', this.beginInteraction);
+    window.removeEventListener('pointerup', this.endInteraction);
+    window.removeEventListener('pointercancel', this.endInteraction);
     this.dock.dispose();
   }
 
   private render(): void {
+    if (this.pointerHeld) { this.renderPending = true; return; }
     this.element.dataset.expanded = String(this.expanded);
     if (this.expanded) {
+      const scroll = this.dock.body.querySelector('.ops-scroll')?.scrollTop ?? 0;
       this.dock.body.innerHTML = this.renderExpanded();
+      const body = this.dock.body.querySelector('.ops-scroll');
+      if (body) body.scrollTop = scroll;
       return;
     }
     this.dock.collapsedHost.innerHTML = this.renderCollapsed();
@@ -250,7 +269,7 @@ export class OperationalIntelligenceOverlay {
           <div>
             <div class="ops-eyebrow">
               <span class="ops-live-dot"></span>
-              OPERATIONAL INTELLIGENCE / ${escapeHtml(this.snapshot.mission.phase)}
+              OPERATIONAL INTELLIGENCE / ${escapeHtml(this.snapshot.semantic.missionStatus.state)}
             </div>
             <h1>${escapeHtml(this.snapshot.mission.label)}</h1>
             <p>${escapeHtml(this.snapshot.mission.scene)} · spatial truth synchronized</p>
@@ -465,7 +484,7 @@ export class OperationalIntelligenceOverlay {
             <span class="ops-map__label">
               <strong>${escapeHtml(object.id)}</strong>
               <small>${escapeHtml(getRoleOrTask(object))}</small>
-              <em>${escapeHtml(object.properties.health ?? object.properties.status)}</em>
+              <em>${escapeHtml(object.properties.authoritativeState ?? object.properties.status)}</em>
             </span>
           </button>
         `;
@@ -557,6 +576,7 @@ export class OperationalIntelligenceOverlay {
       ['EXPECTED', evidence.expected, 'plan'],
       ['REPORTED', evidence.reported, 'reported'],
       ['OBSERVED', evidence.observed, 'observed'],
+      ['AUTHORITATIVE', evidence.authoritative, 'observed'],
     ] as const;
     return `
       <div class="ops-evidence">
@@ -601,7 +621,7 @@ export class OperationalIntelligenceOverlay {
       {
         objectId: selected.id,
         label: selected.label,
-        state: selected.properties.health ?? selected.properties.status,
+        state: selected.properties.authoritativeState ?? selected.properties.status,
       },
       ...this.snapshot.analysis.intelligence.downstreamImpact,
     ];
@@ -661,7 +681,7 @@ export class OperationalIntelligenceOverlay {
       actionControl = `
         <button type="button" class="ops-primary-action is-verification" data-command="confirm-verification">
           <span>DETERMINISTIC DEMO TRIGGER</span>
-          <strong>Confirm Go2 observation</strong>
+          <strong>Simulate observation</strong>
           <em>VERIFY →</em>
         </button>
       `;
@@ -692,7 +712,7 @@ export class OperationalIntelligenceOverlay {
       <div class="ops-trace">
         <div class="ops-trace__timeline">
           ${this.snapshot.trace
-            .map(
+            .slice(-60).map(
               (entry, index) => `
                 <div class="ops-trace__event ops-trace__event--${entry.kind} ${entry.status === 'active' ? 'is-active' : ''}">
                   <span class="ops-trace__index">${String(index + 1).padStart(2, '0')}</span>
@@ -724,7 +744,10 @@ export class OperationalIntelligenceOverlay {
               : ''
           }
         </div>
+        ${Object.values(this.snapshot.semantic.resources).filter(r => r.shortage > 0).map(r => `<div class="ops-trace__resolved"><span>${escapeHtml(r.provenance)} · RESOURCE PRIORITY ${r.priority}</span><strong>${escapeHtml(r.id)}: ${r.shortage} ${r.unit} short</strong><small>${escapeHtml(r.recommendation)}</small></div>`).join('')}
+        <div class="ops-trace__resolved"><span>NAVIGATION AUTHORITY</span><strong>${escapeHtml(this.snapshot.semantic.missionStatus.navigationSource ?? 'NO FRESH SENSOR EVIDENCE')}</strong><small>${escapeHtml(this.snapshot.semantic.missionStatus.holdReasons.join('; '))}</small></div>
         ${actionControl}
+
       </div>
     `;
   }

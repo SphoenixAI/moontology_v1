@@ -102,6 +102,35 @@ class MapClient:
                 raise GateError('Observe first')
             return self.response['observation']
 
+    def submit_perception(self, *, sample_id, source, target, metric, value,
+                          confidence, timestamp_ms, provenance, location=None,
+                          frame=None, unit=None):
+        """Forward a measured semantic sample; reconciliation remains in Moontology.
+
+        provenance must explicitly be LIVE or DEMO. A Go2 odometry packet alone
+        cannot establish a cable reel's motion or another asset's location.
+        Locations/deltas must already be expressed in the current map frame.
+        Uses the existing scene read token, session and safety-gated map client.
+        """
+        if provenance not in ('LIVE', 'DEMO'):
+            raise GateError('Explicit LIVE or DEMO provenance required')
+        observation = dict(id=sample_id, source=source, target=target,
+                           metric=metric, value=value, confidence=confidence,
+                           timestamp=timestamp_ms, provenance=provenance)
+        if location is not None:
+            observation['location'] = location
+        if frame is not None:
+            observation['frame'] = frame
+        if unit is not None:
+            observation['unit'] = unit
+        return self.post('intelligence', op='observation', observation=observation)
+
+    def report_asset(self, target, state, *, provenance):
+        if provenance not in ('LIVE', 'DEMO'):
+            raise GateError('Explicit LIVE or DEMO provenance required')
+        return self.post('intelligence', op='report', target=target,
+                         state=state, provenance=provenance)
+
 
 class BoundedCapability:
     """Only this capability can issue high-level Move; never exposes joints/motors.

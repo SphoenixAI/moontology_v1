@@ -1,3 +1,4 @@
+import type { WorldState } from './worldState';
 import type { WorldLayout } from '../world/WorldLayout';
 export const ONTOLOGY_OBJECT_TYPES = [
   'Humanoid',
@@ -6,6 +7,7 @@ export const ONTOLOGY_OBJECT_TYPES = [
   'Excavator',
   'CableRover',
   'Task',
+  'Facility', 'Resource', 'ResourceSite', 'TrustSource', 'NetworkPath', 'EnvironmentEvent', 'Discrepancy',
   'WorkZone',
   'Route',
   'PowerNode',
@@ -29,6 +31,7 @@ export const ONTOLOGY_RELATION_TYPES = [
   'chargesAt',
   'observes',
   'routesThrough',
+  'carries', 'processes', 'requires', 'reports', 'contradicts', 'connects',
 ] as const;
 
 export type OntologyRelationType =
@@ -74,6 +77,7 @@ export interface OntologyProperties {
   position?: OntologyPosition;
   footprint?: OntologyFootprint;
   taskProgress?: number;
+  authoritativeState?: string;
   expectedState?: string;
   reportedState?: string;
   observedState?: string;
@@ -189,6 +193,7 @@ export interface EvidenceState {
 }
 
 export interface EvidenceComparison {
+  authoritative: EvidenceState;
   expected: EvidenceState;
   reported: EvidenceState;
   observed: EvidenceState;
@@ -223,6 +228,7 @@ export interface FleetSummary {
 }
 
 export interface OntologySnapshot {
+  semantic: WorldState;
   layout: ReturnType<WorldLayout['observation']> | null;
   revision: number;
   mission: MissionContext;

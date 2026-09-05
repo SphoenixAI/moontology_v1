@@ -3,6 +3,7 @@ import type { AssetRegistry } from '../assets/AssetRegistry';
 import type { OntologyStore } from '../ontology/OntologyStore';
 import { EXCAVATOR_INTERACTION_RADIUS } from './approach';
 import { expectedPositionOf, mobilityOf, roleOf, sequenceLabelOf } from '../levels/sceneAtlas';
+import type { TrustSource, NetworkPath, RobotResourceState, ResourceSite } from '../ontology/worldState';
 
 type State = 'offline' | 'inspected' | 'ready' | 'VERIFIED';
 type Phase = 'IDLE' | 'RUNNING' | 'APPROACHING' | 'INSPECTING' | 'ACTIVATING' | 'VERIFYING' | 'HELD' | 'VERIFIED';
@@ -71,6 +72,7 @@ export class LiveMapState {
     this.worldIdentity = context.world().identity;
   }
   private invalidate(kind: string, newSession = false) {
+    if (newSession || ['scene_heartbeat_lost', 'telemetry_disconnected', 'telemetry_stale', 'relay_disconnected'].includes(kind)) this.context.ontology.invalidateEvidence(kind);
     if (newSession) this.sceneSessionId = crypto.randomUUID();
     this.sceneRevision++; this.armed = false;
     if (this.runId) this.phase = 'HELD';
@@ -88,6 +90,7 @@ export class LiveMapState {
   tick(now = Date.now()) {
     const world = this.context.world();
     const root = this.context.robot();
+    if (this.context.ontology.getMissionState().state === 'HOLD' && (this.armed || this.runId && this.phase !== 'HELD')) this.invalidate('ontology_safety_hold');
     if (world.identity !== this.worldIdentity) {
       this.worldIdentity = world.identity; this.invalidate('world_changed', true);
     } else if (now - this.lastTick > 1500) {
@@ -134,7 +137,7 @@ export class LiveMapState {
         ['STAGED', 'ACTIVE'].includes(semantic.properties.status)
         ? `SCENE_${semantic.properties.backgroundMotionState}` : semantic.properties.status;
       const radius = excavator ? EXCAVATOR_INTERACTION_RADIUS : null;
-      const actions = !excavator || !isVisible || !world.ready || distance === null ? [] :
+      const actions = !this.context.ontology.canAnimate(asset.config.id) || !excavator || !isVisible || !world.ready || distance === null ? [] :
         state === 'VERIFIED' ? [] : distance > radius! ? ['approach'] :
           state === 'offline' ? ['inspect'] : state === 'inspected' ? ['activate'] : ['verify'];
       // Atlas annotations: how the object moves and which story beat it carries, plus
@@ -144,6 +147,8 @@ export class LiveMapState {
       return [{ id: excavator ? 'rover-1' : asset.config.id === 'H01' ? 'digging-bot' : asset.config.id, scene_object_id: asset.config.id,
         type: excavator ? 'excavator' : asset.config.id === 'H01' ? 'humanoid technician' : semantic.type, state, world_position: p, distance_from_robot: distance, bearing,
         visible: isVisible, line_of_sight: null, interaction_radius: radius,
+        semantic_state: this.context.ontology.getAssetState(asset.config.id) ?? null,
+        animation_paused_by_ontology: asset.root.userData.semanticPaused === true,
         interactable: actions.length > 0 && actions[0] !== 'approach',
         object_affordances: excavator ? ['approach', 'inspect', 'activate', 'verify'] : [], currently_valid_actions: actions,
         mobility: mobilityOf(asset.config.id) ?? 'static', sequence_label: sequenceLabelOf(asset.config.id), atlas_role: roleOf(asset.config.id),
@@ -153,6 +158,8 @@ export class LiveMapState {
     return { scene_session_id: this.sceneSessionId, scene_revision: this.sceneRevision,
       observation_sequence: ++this.sequence, timestamp: new Date().toISOString(), map_ready: world.ready,
       active_world: world.identity, robot_pose: pose,
+      intelligence: { ...snapshot.semantic, observations: snapshot.semantic.observations.slice(-24), events: snapshot.semantic.events.slice(-24), discrepancies: snapshot.semantic.discrepancies.slice(-24),
+        history_counts: snapshot.semantic.historyCounts },
       mission_state: { run_id: this.runId, phase: this.phase, reported_phase: this.reportedPhase,
         target_id: this.target, mode: this.mode, map_armed: this.armed, physical_arming: 'local_operator_gate',
         verification_scope: 'map_semantic_only', hold_reason: this.holdPose ? this.event.kind : null },
@@ -165,9 +172,10 @@ export class LiveMapState {
   }
   handle(command: Command) {
     this.tick();
+    let history: ReturnType<OntologyStore['getHistory']> | undefined;
     let navigation: (Position & { kind?: string; radius?: number }) | null | undefined;
     const finish = (status: number, error?: string) => ({ id: command.id, status,
-      body: { ok: status < 400, ...(error ? { error, requires_observation: true } : {}), observation: this.observation(), ...(navigation !== undefined ? { navigation } : {}) } });
+      body: { ok: status < 400, ...(error ? { error, requires_observation: true } : {}), observation: this.observation(), ...(history ? { intelligence_history: history } : {}), ...(navigation !== undefined ? { navigation } : {}) } });
     if (Date.now() > command.expires_at) return finish(409, 'expired_command');
     if (command.kind === 'observation') return finish(200);
     const c = command.context, b = command.body;
@@ -178,10 +186,27 @@ export class LiveMapState {
     const fingerprint = JSON.stringify({ kind: command.kind, payload });
     const previous = this.cached.get(key);
     if (previous) return previous.fingerprint === fingerprint ? finish(previous.status, previous.error) : finish(409, 'command_id_reused');
-    let status = 200, error: string | undefined, spawnBlock: string | null = null;
+    let status = 200, error: string | undefined, spawnBlock: string | null;
     const reject = (reason: string) => { status = 409; error = reason; };
     const world = this.context.world();
-    if (command.kind === 'reset') {
+    if (command.kind === 'intelligence') {
+      try {
+        const ontology = this.context.ontology;
+        if (b.op === 'history') history = ontology.getHistory(Number(b.cursor ?? 0), Number(b.limit ?? 24));
+        else if (b.op === 'robot_resource' && ['LIVE', 'DEMO'].includes(String(b.provenance))) ontology.updateRobotResource(b.robot as RobotResourceState, b.provenance as 'LIVE' | 'DEMO');
+        else if (b.op === 'resource_site') ontology.updateResourceSite(b.site as ResourceSite);
+        else if (b.op === 'observation') ontology.ingestObservation(b.observation);
+        else if (b.op === 'report' && ['LIVE', 'DEMO'].includes(String(b.provenance))) ontology.ingestReport(String(b.target), String(b.state), b.provenance as 'LIVE' | 'DEMO');
+        else if (b.op === 'trust') ontology.configureTrust(b.source as TrustSource);
+        else if (b.op === 'network_path') ontology.configurePath(b.path as NetworkPath);
+        else if (b.op === 'resource' && ['LIVE', 'DEMO'].includes(String(b.provenance))) ontology.updateResource(String(b.target), Number(b.inventory), Number(b.requiredSupply), b.provenance as 'LIVE' | 'DEMO');
+        else if (b.op === 'resolve') ontology.resolveDiscrepancy(String(b.discrepancy_id), String(b.reason ?? ''));
+        else if (b.op === 'cable_demo') ontology.startCableDemo();
+        else reject('unknown_intelligence_operation');
+      } catch (e) { status = 400; error = e instanceof Error ? e.message : 'invalid_intelligence_command'; }
+    } else if (this.context.ontology.getMissionState().state === 'HOLD' && ['mission', 'interaction', 'telemetry'].includes(command.kind) && b.op !== 'hold' && b.connected !== false) {
+      reject('ontology_safety_hold_operator_revalidation_required');
+    } else if (command.kind === 'reset') {
       if (!['mission', 'session', 'demo'].includes(String(b.scope))) reject('scope_must_be_mission_session_or_demo');
       else if (this.source !== 'manual' && this.telemetryFresh) reject('disconnect_telemetry_before_rehearsal_reset');
       else if (b.scope === 'demo' && (spawnBlock = this.context.resetDemo?.() ?? null)) reject(`demo_spawn_unavailable: ${spawnBlock}`);
@@ -269,7 +294,7 @@ export class LiveMapState {
         }
       }
     } else reject('unknown_command');
-    if (status < 400 && command.kind !== 'telemetry') this.context.ontology.setDemoMissionState('EXC-01', this.roverState, this.phase, this.mode);
+    if (status < 400 && !['telemetry', 'intelligence'].includes(command.kind)) this.context.ontology.setDemoMissionState('EXC-01', this.roverState, this.phase, this.mode);
     this.cached.set(key, { fingerprint, status, error });
     if (this.cached.size > 256) this.cached.delete(this.cached.keys().next().value!);
     return finish(status, error);
