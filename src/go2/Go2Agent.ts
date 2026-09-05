@@ -178,6 +178,15 @@ export class Go2Agent implements Go2MotionTarget {
     this.visualRig.rotation.set(0, this.agentRoot.rotation.y, 0);
   }
 
+  /**
+   * Keep gait integration from treating a scene teleport as one huge step.
+   */
+  acknowledgeAgentRootSnap(): void {
+    this.previousPosition.copy(this.agentRoot.position);
+    this.previousYaw = this.agentRoot.rotation.y;
+    this.syncVisualFromAgentRoot();
+  }
+
   private calibrateVisualRigToRealDimensions(): void {
     this.visualRig.scale.setScalar(1);
     this.visualYOffset = 0;

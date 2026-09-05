@@ -1,0 +1,190 @@
+import {
+  PerspectiveCamera,
+  Quaternion,
+  Vector3,
+  type Object3D,
+} from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  ControlModes,
+  MOONTOLOGY_CONFIG,
+  type ControlMode,
+} from '../config/moontologyConfig';
+import type { PlacementController } from '../debug/PlacementController';
+import type { ManualGo2Controller } from '../go2/ManualGo2Controller';
+import { DockablePanel } from '../ui/DockablePanel';
+
+interface MoonControlSystemOptions {
+  host: HTMLElement;
+  showUi?: boolean;
+  camera: PerspectiveCamera;
+  go2Root: Object3D;
+  orbitControls: OrbitControls;
+  robotController: ManualGo2Controller;
+  placementController: PlacementController | null;
+}
+
+export class MoonControlSystem {
+  private readonly dock: DockablePanel | null;
+  private readonly robotButton = this.createButton('ROBOT');
+  private readonly cameraButton = this.createButton('CAMERA');
+  private readonly mapButton: HTMLButtonElement | null;
+  private readonly recenterButton = this.createButton('RECENTER');
+  private readonly modeValue = document.createElement('span');
+  private readonly camera: PerspectiveCamera;
+  private readonly go2Root: Object3D;
+  private readonly orbitControls: OrbitControls;
+  private readonly robotController: ManualGo2Controller;
+  private readonly placementController: PlacementController | null;
+  private mode: ControlMode = MOONTOLOGY_CONFIG.controls.defaultMode;
+
+  constructor({
+    host,
+    showUi = true,
+    camera,
+    go2Root,
+    orbitControls,
+    robotController,
+    placementController,
+  }: MoonControlSystemOptions) {
+    this.camera = camera;
+    this.go2Root = go2Root;
+    this.orbitControls = orbitControls;
+    this.robotController = robotController;
+    this.placementController = placementController;
+    this.mapButton = placementController
+      ? this.createButton('MAP EDIT')
+      : null;
+
+    if (showUi) {
+      this.dock = new DockablePanel({
+        id: 'moon-controls',
+        title: 'CONTROLS',
+        host,
+        className: 'moon-control-switcher',
+        ariaLabel: 'Moontology control mode',
+        defaultMode: 'bottom-right',
+        defaultCollapsed: false,
+        persist: false,
+      });
+
+      const modeRow = document.createElement('div');
+      modeRow.className = 'moon-control-switcher__mode';
+      modeRow.append('ACTIVE: ', this.modeValue);
+
+      const buttons = document.createElement('div');
+      buttons.className = 'moon-control-switcher__buttons';
+      buttons.append(this.robotButton, this.cameraButton);
+      if (this.mapButton) {
+        buttons.append(this.mapButton, this.recenterButton);
+      }
+      this.dock.body.append(modeRow, buttons);
+
+      this.robotButton.addEventListener('click', this.activateRobot);
+      this.cameraButton.addEventListener('click', this.activateCamera);
+      this.mapButton?.addEventListener('click', this.activateMapEdit);
+      if (this.mapButton) {
+        this.recenterButton.addEventListener('click', this.recenter);
+      }
+    } else {
+      this.dock = null;
+    }
+
+    this.setMode(this.mode);
+  }
+
+  setMode(mode: ControlMode): void {
+    if (
+      mode !== ControlModes.ROBOT &&
+      mode !== ControlModes.CAMERA &&
+      mode !== ControlModes.MAP_EDIT
+    ) {
+      console.warn(`[Controls] Invalid mode: ${String(mode)}`);
+      return;
+    }
+    if (mode === ControlModes.MAP_EDIT && !this.placementController) {
+      console.warn('[Controls] MAP_EDIT is unavailable.');
+      return;
+    }
+
+    this.mode = mode;
+    this.robotController.setEnabled(mode === ControlModes.ROBOT);
+    this.placementController?.setEnabled(
+      mode === ControlModes.MAP_EDIT,
+    );
+    this.orbitControls.enabled =
+      mode === ControlModes.CAMERA || mode === ControlModes.MAP_EDIT;
+
+    this.modeValue.textContent = mode;
+    this.updateButtonState(this.robotButton, mode === ControlModes.ROBOT);
+    this.updateButtonState(this.cameraButton, mode === ControlModes.CAMERA);
+    if (this.mapButton) {
+      this.updateButtonState(
+        this.mapButton,
+        mode === ControlModes.MAP_EDIT,
+      );
+    }
+    console.info(`[Controls] Mode → ${mode}`);
+  }
+
+  dispose(): void {
+    this.robotController.setEnabled(false);
+    this.placementController?.setEnabled(false);
+    this.robotButton.removeEventListener('click', this.activateRobot);
+    this.cameraButton.removeEventListener('click', this.activateCamera);
+    this.mapButton?.removeEventListener('click', this.activateMapEdit);
+    this.recenterButton.removeEventListener('click', this.recenter);
+    this.dock?.dispose();
+  }
+
+  private readonly activateRobot = (): void => {
+    this.setMode(ControlModes.ROBOT);
+  };
+
+  private readonly activateCamera = (): void => {
+    this.setMode(ControlModes.CAMERA);
+  };
+
+  private readonly activateMapEdit = (): void => {
+    this.setMode(ControlModes.MAP_EDIT);
+  };
+
+  recenterOnGo2(): void {
+    this.recenter();
+  }
+
+  private readonly recenter = (): void => {
+    const robotPosition = this.go2Root.getWorldPosition(new Vector3());
+    const robotRotation = this.go2Root.getWorldQuaternion(new Quaternion());
+    // Go2 travels along local +X, while camera offsets use conventional
+    // camera coordinates where negative Z means behind the subject.
+    const offset = new Vector3(
+      MOONTOLOGY_CONFIG.controls.cameraOffset.z,
+      MOONTOLOGY_CONFIG.controls.cameraOffset.y,
+      MOONTOLOGY_CONFIG.controls.cameraOffset.x,
+    ).applyQuaternion(robotRotation);
+
+    this.camera.position.copy(robotPosition).add(offset);
+    const lookTarget = robotPosition.clone();
+    lookTarget.y += MOONTOLOGY_CONFIG.controls.lookTargetHeight;
+    this.camera.lookAt(lookTarget);
+    this.orbitControls.target.copy(lookTarget);
+    this.orbitControls.update();
+    console.info('[Camera] Recentered on Go2.');
+  };
+
+  private createButton(label: string): HTMLButtonElement {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    return button;
+  }
+
+  private updateButtonState(
+    button: HTMLButtonElement,
+    active: boolean,
+  ): void {
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', String(active));
+  }
+}

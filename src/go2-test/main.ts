@@ -1,4 +1,6 @@
 import './style.css';
+import '../ui/glass.css';
+import '../ui/dockablePanel.css';
 import {
   ACESFilmicToneMapping,
   Box3,
@@ -31,6 +33,7 @@ import { loadOfficialGo2 } from '../go2/loadOfficialGo2';
 import { level1 } from '../levels/level1';
 import type { LevelAssetConfig } from '../levels/types';
 import { Go2DebugPanel } from './Go2DebugPanel';
+import { DockablePanel } from '../ui/DockablePanel';
 
 const app = document.querySelector<HTMLDivElement>('#go2-test');
 if (!app) {
@@ -47,10 +50,29 @@ app.innerHTML = `
 const canvas = document.querySelector<HTMLCanvasElement>('#go2-canvas');
 const panelHost = document.querySelector<HTMLDivElement>('#go2-panel-host');
 const status = document.querySelector<HTMLDivElement>('#go2-status');
+const backLink = document.querySelector<HTMLAnchorElement>('.go2-back-link');
 
-if (!canvas || !panelHost || !status) {
+if (!canvas || !panelHost || !status || !backLink) {
   throw new Error('Go2 test UI could not be initialized.');
 }
+
+const statusDock = new DockablePanel({
+  id: 'go2-status',
+  title: 'STATUS',
+  host: panelHost,
+  className: 'go2-status-dock',
+  defaultMode: 'bottom-left',
+});
+statusDock.body.append(status);
+
+const backDock = new DockablePanel({
+  id: 'go2-back',
+  title: 'NAVIGATION',
+  host: panelHost,
+  className: 'go2-back-dock',
+  defaultMode: 'top-left',
+});
+backDock.body.append(backLink);
 
 const scene = new Scene();
 scene.name = 'isolated-go2-urdf-test';
@@ -235,6 +257,8 @@ const dispose = (): void => {
   renderer.setAnimationLoop(null);
   window.removeEventListener('resize', resize);
   debugPanel?.dispose();
+  statusDock.dispose();
+  backDock.dispose();
   humanoidAnimations.dispose();
   controls.dispose();
   timer.dispose();

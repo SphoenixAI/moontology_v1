@@ -1,0 +1,68 @@
+:root {
+  --glass-sensor-black: #0a0a0b;
+  --glass-graphite: #202124;
+  --glass-champagne: #bfb1a0;
+  --glass-champagne-deep: #ab8f74;
+  --glass-live: #9dccb8;
+  --glass-text: rgb(245 243 239 / 92%);
+  --glass-text-secondary: rgb(220 216 210 / 62%);
+  --glass-panel-background: rgb(10 10 11 / 58%);
+  --glass-panel-border: rgb(191 177 160 / 20%);
+  --glass-panel-shadow:
+    0 18px 50px rgb(0 0 0 / 28%),
+    inset 0 1px 0 rgb(255 255 255 / 5%);
+  --glass-panel-radius: 18px;
+  --glass-control-background: rgb(255 255 255 / 2.5%);
+  --glass-control-hover: rgb(255 255 255 / 6.5%);
+  --glass-control-selected: rgb(191 177 160 / 8%);
+  --glass-control-border: rgb(255 255 255 / 14%);
+  --glass-control-selected-border: rgb(191 177 160 / 55%);
+
+  /* Compatibility aliases for existing compact HUD components. */
+  --panel: var(--glass-panel-background);
+  --panel-border: var(--glass-panel-border);
+  --border: var(--glass-panel-border);
+  --muted: var(--glass-text-secondary);
+  --accent: var(--glass-champagne);
+}
+
+.glass-surface {
+  color: var(--glass-text);
+  background: var(--glass-panel-background);
+  border: 1px solid var(--glass-panel-border);
+  border-radius: var(--glass-panel-radius);
+  box-shadow: var(--glass-panel-shadow);
+  backdrop-filter: blur(20px) saturate(125%);
+  -webkit-backdrop-filter: blur(20px) saturate(125%);
+  pointer-events: auto;
+}
+
+.glass-surface button {
+  appearance: none;
+  color: var(--glass-text);
+  background: var(--glass-control-background);
+  border: 1px solid var(--glass-control-border);
+  border-radius: 10px;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.glass-surface button:hover:not(:disabled) {
+  background-color: var(--glass-control-hover);
+}
+
+.glass-surface button.is-active,
+.glass-surface button[aria-pressed='true'] {
+  color: var(--glass-text);
+  background-color: var(--glass-control-selected);
+  border-color: var(--glass-control-selected-border);
+}
+
+.glass-surface button:focus-visible,
+.glass-surface a:focus-visible,
+.glass-surface input:focus-visible {
+  outline: 1px solid var(--glass-control-selected-border);
+  outline-offset: 2px;
+}

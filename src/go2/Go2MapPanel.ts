@@ -1,8 +1,9 @@
 import { MathUtils } from 'three';
+import { DockablePanel } from '../ui/DockablePanel';
 import type { Go2Agent } from './Go2Agent';
 
 export class Go2MapPanel {
-  private readonly element = document.createElement('aside');
+  private readonly dock: DockablePanel;
   private readonly positionValue = document.createElement('dd');
   private readonly yawValue = document.createElement('dd');
   private readonly speedValue = document.createElement('dd');
@@ -15,9 +16,14 @@ export class Go2MapPanel {
 
   constructor(host: HTMLElement, agent: Go2Agent) {
     this.agent = agent;
-    this.element.className = 'go2-map-panel';
-    this.element.innerHTML = `
-      <h2>GO2 PROCEDURAL GAIT TEST</h2>
+    this.dock = new DockablePanel({
+      id: 'go2-map',
+      title: 'GO2 PROCEDURAL GAIT TEST',
+      host,
+      className: 'go2-map-panel',
+      defaultMode: 'top-right',
+    });
+    this.dock.body.innerHTML = `
       <p>AgentRoot is authoritative. VisualRig follows position and yaw.</p>
       <div class="go2-map-panel__keys" aria-label="Manual controls">
         <kbd>↑</kbd><span>Forward</span>
@@ -31,7 +37,7 @@ export class Go2MapPanel {
       </a>
     `;
 
-    const values = this.element.querySelector('dl');
+    const values = this.dock.body.querySelector('dl');
     const rows: ReadonlyArray<[string, HTMLElement]> = [
       ['AgentRoot position', this.positionValue],
       ['AgentRoot yaw', this.yawValue],
@@ -48,7 +54,6 @@ export class Go2MapPanel {
       values?.append(term, value);
     }
 
-    host.append(this.element);
     this.update();
   }
 
@@ -69,6 +74,6 @@ export class Go2MapPanel {
   }
 
   dispose(): void {
-    this.element.remove();
+    this.dock.dispose();
   }
 }

@@ -8,12 +8,18 @@ const movementKeys = new Set([
   'ArrowDown',
   'ArrowLeft',
   'ArrowRight',
+  'KeyW',
+  'KeyS',
+  'KeyA',
+  'KeyD',
 ]);
 
 export class ManualGo2Controller implements Go2Controller {
   private readonly pressed = new Set<string>();
   private readonly moveSpeed: number;
   private readonly turnSpeed: number;
+  private enabled = true;
+  private externalControlActive = false;
 
   constructor(moveSpeed = 0.8, turnSpeed = 1.6) {
     this.moveSpeed = moveSpeed;
@@ -24,18 +30,36 @@ export class ManualGo2Controller implements Go2Controller {
   }
 
   update(deltaSeconds: number, target: Go2MotionTarget): void {
+    if (!this.enabled || this.externalControlActive) {
+      return;
+    }
+
     const moveInput =
-      Number(this.pressed.has('ArrowUp')) -
-      Number(this.pressed.has('ArrowDown'));
+      Number(this.pressed.has('ArrowUp') || this.pressed.has('KeyW')) -
+      Number(this.pressed.has('ArrowDown') || this.pressed.has('KeyS'));
     const turnInput =
-      Number(this.pressed.has('ArrowLeft')) -
-      Number(this.pressed.has('ArrowRight'));
+      Number(this.pressed.has('ArrowLeft') || this.pressed.has('KeyA')) -
+      Number(this.pressed.has('ArrowRight') || this.pressed.has('KeyD'));
 
     if (turnInput !== 0) {
       target.rotateYaw(turnInput * this.turnSpeed * deltaSeconds);
     }
     if (moveInput !== 0) {
       target.moveForward(moveInput * this.moveSpeed * deltaSeconds);
+    }
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    if (!enabled || this.externalControlActive) {
+      this.clear();
+    }
+  }
+
+  setExternalControlActive(active: boolean): void {
+    this.externalControlActive = active;
+    if (active) {
+      this.clear();
     }
   }
 
@@ -48,6 +72,8 @@ export class ManualGo2Controller implements Go2Controller {
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (
+      !this.enabled ||
+      this.externalControlActive ||
       !movementKeys.has(event.code) ||
       this.isEditableTarget(event.target)
     ) {

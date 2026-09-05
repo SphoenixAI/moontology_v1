@@ -1,0 +1,81 @@
+.static-systems-panel {
+  width: min(310px, calc(100vw - 40px));
+}
+
+.static-systems-panel .dock-panel__body {
+  padding: 4px 13px 13px;
+}
+
+.static-systems-panel h2,
+.static-systems-panel h3,
+.static-systems-panel summary {
+  margin: 0;
+  letter-spacing: 0.1em;
+}
+
+.static-systems-panel h2 {
+  color: var(--glass-champagne);
+  font-size: 0.74rem;
+}
+
+.static-systems-panel h3,
+.static-systems-panel summary {
+  margin-top: 11px;
+  color: var(--glass-text-secondary);
+  font-size: 0.6rem;
+  cursor: pointer;
+  list-style: none;
+}
+
+.static-systems-panel summary::-webkit-details-marker,
+.static-systems-panel summary::marker {
+  display: none;
+}
+
+.static-systems-panel summary::after {
+  float: right;
+  color: var(--glass-champagne);
+  content: "▾";
+}
+
+.static-systems-panel details:not([open]) summary::after {
+  content: "▸";
+}
+
+.static-systems-panel__status {
+  display: grid;
+  gap: 5px;
+  margin-top: 9px;
+  color: var(--glass-text-secondary);
+  font: 0.57rem/1.3 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.static-systems-panel__status span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.static-systems-panel__status strong {
+  color: var(--glass-text);
+}
+
+.static-systems-panel__buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.static-systems-panel button {
+  min-height: 29px;
+  padding: 6px 7px;
+  cursor: pointer;
+  font: 650 0.57rem/1.1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.static-systems-panel button:hover {
+  border-color: var(--glass-control-selected-border);
+}

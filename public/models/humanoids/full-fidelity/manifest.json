@@ -1,0 +1,50 @@
+{
+  "method": "Byte-for-byte copy; no conversion, simplification or texture processing",
+  "originals_sha256": {
+    "h01-sweat.fbx": "0d32f508f8593b4cef65206d9de0be326f15b5ccb8d3f161b4c53b540d9cacd5",
+    "Dig And Plant Seeds.fbx": "d9e28c759a2b9607840826f6fc67b3b20ff2b977fb307837ffe19803e63b6269",
+    "h01-kicking.fbx": "974144fb6a8d25cf19920c6c283df6598b7585b009503efc07791f6ea58a1447",
+    "Kneeling Inspecting.fbx": "2253a1069c20cca28acfa85c764ad13c678d0ec3a2e9dcada4182a3f3ed1eb04",
+    "Writing.fbx": "7e688036fd3b0eb5152655a93e9f64dadfc064be484f14cfedaa3ef3628662d9",
+    "Defeat.fbx": "f032df2c65cf4b87126a34e05dc9e856162513be9c96d1c62a19a029de95cbb0",
+    "scene1/Dig And Plant Seeds.fbx": "ccbf281cee901732f512167d11bcfbd2e01162b48a26c0bd53fd2ee708dcc44b"
+  },
+  "copies": [
+    {
+      "source": "scene1/Dig And Plant Seeds.fbx",
+      "copy": "full-fidelity/Dig And Plant Seeds.fbx",
+      "bytes": 65037808,
+      "sha256": "ccbf281cee901732f512167d11bcfbd2e01162b48a26c0bd53fd2ee708dcc44b"
+    },
+    {
+      "source": "Writing.fbx",
+      "copy": "full-fidelity/Writing.fbx",
+      "bytes": 65442496,
+      "sha256": "7e688036fd3b0eb5152655a93e9f64dadfc064be484f14cfedaa3ef3628662d9"
+    },
+    {
+      "source": "Kneeling Inspecting.fbx",
+      "copy": "full-fidelity/Kneeling Inspecting.fbx",
+      "bytes": 65494768,
+      "sha256": "2253a1069c20cca28acfa85c764ad13c678d0ec3a2e9dcada4182a3f3ed1eb04"
+    },
+    {
+      "source": "h01-kicking.fbx",
+      "copy": "full-fidelity/h01-kicking.fbx",
+      "bytes": 65325824,
+      "sha256": "974144fb6a8d25cf19920c6c283df6598b7585b009503efc07791f6ea58a1447"
+    },
+    {
+      "source": "h01-sweat.fbx",
+      "copy": "full-fidelity/h01-sweat.fbx",
+      "bytes": 65381440,
+      "sha256": "0d32f508f8593b4cef65206d9de0be326f15b5ccb8d3f161b4c53b540d9cacd5"
+    },
+    {
+      "source": "Defeat.fbx",
+      "copy": "full-fidelity/Defeat.fbx",
+      "bytes": 65437344,
+      "sha256": "f032df2c65cf4b87126a34e05dc9e856162513be9c96d1c62a19a029de95cbb0"
+    }
+  ]
+}

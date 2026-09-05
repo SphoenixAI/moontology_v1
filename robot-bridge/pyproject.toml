@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "moontology-bridge"
+version = "0.1.0"
+description = "Fail-closed dimOS telemetry and command bridge for Moontology"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "dimos>=0.0.13",
+  "fastapi>=0.115.6",
+  "uvicorn>=0.34.0",
+]
+
+[project.scripts]
+moontology-bridge = "moontology_bridge.cli:main"
+
+[project.entry-points."dimos.blueprints"]
+websocket = "moontology_bridge.server:moontology_bridge"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/moontology_bridge"]

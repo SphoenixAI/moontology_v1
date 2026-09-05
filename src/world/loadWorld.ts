@@ -18,6 +18,7 @@ import {
   createPlaceholderWorld,
   createStagingCollisionFloor,
 } from './placeholderWorld';
+import { MOONTOLOGY_CONFIG } from '../config/moontologyConfig';
 
 export interface WorldHandle {
   root: Group;
@@ -43,7 +44,39 @@ interface LoadWorldOptions {
 const formatError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
-const assertResourceAvailable = async (url: string): Promise<void> => {
+const formatMs = (elapsedMs: number): string =>
+  `${Math.round(elapsedMs)}ms`;
+
+const withTimeout = async <T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  message: string,
+): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timeout = window.setTimeout(() => {
+      reject(new Error(`${message} after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+
+interface ResourceProbe {
+  contentLength: string | null;
+  contentType: string;
+}
+
+const assertResourceAvailable = async (
+  url: string,
+): Promise<ResourceProbe> => {
   try {
     const response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
     const contentType = response.headers.get('content-type') ?? '';
@@ -53,6 +86,10 @@ const assertResourceAvailable = async (url: string): Promise<void> => {
     if (contentType.includes('text/html')) {
       throw new Error(`Unexpected content type "${contentType}"`);
     }
+    return {
+      contentLength: response.headers.get('content-length'),
+      contentType,
+    };
   } catch (error) {
     throw new Error(
       `Resource check failed for "${url}": ${formatError(error)}`,
@@ -103,9 +140,17 @@ export const loadWorld = async ({
   let colliderMaterial: MeshBasicMaterial | null = null;
 
   if (config.mode === 'marble') {
-    console.info('[WorldLabs] loading splat...', config.visualSrc);
+    const splatStart = performance.now();
+    console.info('[WorldLabs] loading splat...', {
+      url: config.visualSrc,
+    });
     try {
-      await assertResourceAvailable(config.visualSrc);
+      const probe = await assertResourceAvailable(config.visualSrc);
+      console.info('[WorldLabs] splat resource available', {
+        url: config.visualSrc,
+        contentLength: probe.contentLength,
+        contentType: probe.contentType,
+      });
       const { SparkRenderer, SplatMesh } = await import(
         '@sparkjsdev/spark'
       );
@@ -130,7 +175,10 @@ export const loadWorld = async ({
       visualLayer.add(splat);
       await splat.initialized;
       activeMode = 'marble';
-      console.info('[WorldLabs] splat loaded', config.visualSrc);
+      console.info('[WorldLabs] splat loaded', {
+        url: config.visualSrc,
+        elapsed: formatMs(performance.now() - splatStart),
+      });
     } catch (error) {
       fallbackReason =
         `Splat failed to load from "${config.visualSrc}": ${formatError(error)}`;
@@ -155,10 +203,29 @@ export const loadWorld = async ({
   }
 
   if (config.mode === 'marble') {
-    console.info('[WorldLabs] loading collider...', config.colliderSrc);
+    const colliderStart = performance.now();
+    const colliderTimeoutMs =
+      MOONTOLOGY_CONFIG.loading.worldColliderTimeoutMs;
+    console.info('[WorldLabs] loading collider...', {
+      url: config.colliderSrc,
+      timeoutMs: colliderTimeoutMs,
+    });
     try {
-      await assertResourceAvailable(config.colliderSrc);
-      const gltf = await new GLTFLoader().loadAsync(config.colliderSrc);
+      const probe = await withTimeout(
+        assertResourceAvailable(config.colliderSrc),
+        colliderTimeoutMs,
+        `World Labs collider resource check timed out for "${config.colliderSrc}"`,
+      );
+      console.info('[WorldLabs] collider resource available', {
+        url: config.colliderSrc,
+        contentLength: probe.contentLength,
+        contentType: probe.contentType,
+      });
+      const gltf = await withTimeout(
+        new GLTFLoader().loadAsync(config.colliderSrc),
+        colliderTimeoutMs,
+        `World Labs collider initialization timed out for "${config.colliderSrc}"`,
+      );
       collider = gltf.scene;
       collider.name = 'world-labs-collider-mesh';
       collider.userData.worldCollision = true;
@@ -182,7 +249,10 @@ export const loadWorld = async ({
       });
 
       generatedColliderLayer.add(collider);
-      console.info('[WorldLabs] collider loaded', config.colliderSrc);
+      console.info('[WorldLabs] collider loaded', {
+        url: config.colliderSrc,
+        elapsed: formatMs(performance.now() - colliderStart),
+      });
     } catch (error) {
       console.warn('[WorldLabs] collider failed', {
         url: config.colliderSrc,

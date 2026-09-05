@@ -1,0 +1,225 @@
+.dock-panel {
+  position: fixed;
+  z-index: 20;
+  display: flex;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 32px);
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.dock-panel.glass-surface {
+  position: fixed;
+}
+
+.dock-panel--fill {
+  max-height: none;
+}
+
+.dock-panel.is-dragging,
+.dock-panel.is-dragging * {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.dock-panel__chrome {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  padding: 5px 7px 5px 9px;
+  cursor: grab;
+  border-bottom: 1px solid var(--glass-panel-border);
+}
+
+.dock-panel.is-dragging .dock-panel__chrome,
+.dock-panel.is-dragging .dock-panel__collapsed {
+  cursor: grabbing;
+}
+
+.dock-panel__grip {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, 3px);
+  gap: 2px;
+  width: 8px;
+  opacity: 0.42;
+}
+
+.dock-panel__grip i {
+  width: 3px;
+  height: 3px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.dock-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--glass-champagne);
+  font: 650 0.63rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.12em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dock-panel__docks {
+  display: grid;
+  flex: 0 0 auto;
+  grid-template-columns: repeat(2, 11px);
+  gap: 2px;
+}
+
+.dock-panel__dock,
+.dock-panel__collapse {
+  padding: 0;
+  color: inherit;
+  background: var(--glass-control-background);
+  border: 1px solid var(--glass-control-border);
+  cursor: pointer;
+}
+
+.dock-panel__dock {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+}
+
+.dock-panel__dock.is-active,
+.dock-panel__dock:hover,
+.dock-panel__collapse:hover,
+.dock-panel__collapse:focus-visible,
+.dock-panel__dock:focus-visible {
+  background: var(--glass-control-selected);
+  border-color: var(--glass-control-selected-border);
+  outline: none;
+}
+
+.dock-panel__collapse {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 4px;
+  font: 700 0.78rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dock-panel__body,
+.dock-panel__collapsed {
+  min-height: 0;
+  user-select: text;
+}
+
+.dock-panel__body {
+  overflow: auto;
+}
+
+.dock-panel--fill .dock-panel__body {
+  display: flex;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.dock-panel--collapsed {
+  width: auto;
+  min-width: 210px;
+}
+
+.dock-panel--collapsed .dock-panel__chrome {
+  border-bottom: 0;
+}
+
+.dock-panel--ops .dock-panel__chrome {
+  color: var(--glass-text);
+  background: rgb(255 255 255 / 2%);
+  border-bottom-color: var(--glass-panel-border);
+}
+
+.dock-panel--ops .dock-panel__title {
+  color: var(--glass-champagne);
+}
+
+.dock-panel--ops .dock-panel__dock,
+.dock-panel--ops .dock-panel__collapse {
+  background: var(--glass-control-background);
+  border-color: var(--glass-control-border);
+}
+
+.dock-panel--ops.dock-panel--collapsed {
+  min-width: 0;
+}
+
+.dock-panel--ops.dock-panel--collapsed .dock-panel__chrome {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: 8px;
+  z-index: 3;
+  justify-content: flex-end;
+  background: transparent;
+  border: 0;
+}
+
+.dock-panel--ops.dock-panel--collapsed .dock-panel__grip,
+.dock-panel--ops.dock-panel--collapsed .dock-panel__title {
+  display: none;
+}
+
+.dock-panel--ops .dock-panel__collapsed {
+  cursor: grab;
+}
+
+.dock-snap-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.dock-snap-overlay__zone {
+  position: absolute;
+  width: min(280px, 32vw);
+  height: min(180px, 28vh);
+  border: 1px dashed rgb(191 177 160 / 28%);
+  border-radius: 14px;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.dock-snap-overlay__zone[data-corner='top-left'] {
+  top: 16px;
+  left: 16px;
+}
+
+.dock-snap-overlay__zone[data-corner='top-right'] {
+  top: 16px;
+  right: 16px;
+}
+
+.dock-snap-overlay__zone[data-corner='bottom-left'] {
+  bottom: 16px;
+  left: 16px;
+}
+
+.dock-snap-overlay__zone[data-corner='bottom-right'] {
+  bottom: 16px;
+  right: 16px;
+}
+
+.dock-snap-overlay__zone.is-active {
+  background: var(--glass-control-selected);
+  border-color: var(--glass-control-selected-border);
+  box-shadow: 0 0 0 1px rgb(191 177 160 / 18%) inset;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock-snap-overlay__zone {
+    transition: none;
+  }
+}

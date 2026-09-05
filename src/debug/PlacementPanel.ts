@@ -1,5 +1,6 @@
 import type { Group } from 'three';
 import type { AssetRegistry } from '../assets/AssetRegistry';
+import { DockablePanel } from '../ui/DockablePanel';
 import type { WorldHandle } from '../world/loadWorld';
 import {
   serializeAssetTransform,
@@ -8,7 +9,7 @@ import {
 
 export class PlacementPanel {
   private readonly registry: AssetRegistry;
-  private readonly element = document.createElement('aside');
+  private readonly dock: DockablePanel;
   private readonly selectedValue = document.createElement('strong');
   private readonly assetCount = document.createElement('span');
   private readonly copyButton = document.createElement('button');
@@ -25,11 +26,14 @@ export class PlacementPanel {
     totalAssets: number,
   ) {
     this.registry = registry;
-    this.element.className = 'placement-panel';
-    this.element.setAttribute('aria-label', 'Level placement controls');
-
-    const title = document.createElement('h1');
-    title.textContent = 'LEVEL 1 PLACEMENT';
+    this.dock = new DockablePanel({
+      id: 'placement',
+      title: 'LEVEL 1 PLACEMENT',
+      host,
+      className: 'placement-panel',
+      ariaLabel: 'Level placement controls',
+      defaultMode: 'bottom-left',
+    });
 
     const worldBadge = document.createElement('div');
     worldBadge.className = `world-badge world-badge--${world.activeMode}`;
@@ -92,8 +96,7 @@ export class PlacementPanel {
     this.output.className = 'transform-output';
     this.output.textContent = 'Transforms will appear here.';
 
-    this.element.append(
-      title,
+    this.dock.body.append(
       worldBadge,
       countRow,
       selectedRow,
@@ -102,7 +105,6 @@ export class PlacementPanel {
       colliderLabel,
       this.output,
     );
-    host.append(this.element);
   }
 
   setAssetCount(loaded: number, total: number): void {
@@ -124,7 +126,7 @@ export class PlacementPanel {
   dispose(): void {
     this.copyButton.removeEventListener('click', this.copyTransform);
     this.deselectButton.removeEventListener('click', this.deselect);
-    this.element.remove();
+    this.dock.dispose();
   }
 
   private readonly copyTransform = (): void => {

@@ -29,6 +29,7 @@ export class PlacementController {
   private readonly transformHelper: Object3D;
   private pointerStart: PointerStart | null = null;
   private selectedRoot: Group | null = null;
+  private enabled = true;
 
   constructor(
     camera: PerspectiveCamera,
@@ -65,6 +66,23 @@ export class PlacementController {
     return this.selectedRoot;
   }
 
+  select(id: string): boolean {
+    const asset = this.registry.get(id);
+    if (!asset || !asset.root.visible) {
+      return false;
+    }
+
+    this.selectRoot(asset.root);
+    return true;
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+    this.pointerStart = null;
+    this.transformControls.enabled = enabled;
+    this.transformHelper.visible = enabled;
+  }
+
   deselect = (): void => {
     this.selectedRoot = null;
     this.transformControls.detach();
@@ -85,6 +103,9 @@ export class PlacementController {
   }
 
   private readonly handleDraggingChanged = (): void => {
+    if (!this.enabled) {
+      return;
+    }
     this.orbitControls.enabled = !this.transformControls.dragging;
     if (this.transformControls.dragging && this.pointerStart) {
       this.pointerStart.startedOnGizmo = true;
@@ -92,7 +113,7 @@ export class PlacementController {
   };
 
   private readonly handlePointerDown = (event: PointerEvent): void => {
-    if (event.button !== 0) {
+    if (!this.enabled || event.button !== 0) {
       return;
     }
 
@@ -106,6 +127,11 @@ export class PlacementController {
   };
 
   private readonly handlePointerUp = (event: PointerEvent): void => {
+    if (!this.enabled) {
+      this.pointerStart = null;
+      return;
+    }
+
     const start = this.pointerStart;
     this.pointerStart = null;
 
@@ -140,17 +166,12 @@ export class PlacementController {
       return;
     }
 
-    this.selectedRoot = root;
-    this.transformControls.attach(root);
-    const id =
-      typeof root.userData.levelAssetId === 'string'
-        ? root.userData.levelAssetId
-        : root.name;
-    this.onSelectionChange(id, root);
+    this.selectRoot(root);
   };
 
   private readonly handleKeyDown = (event: KeyboardEvent): void => {
     if (
+      !this.enabled ||
       event.ctrlKey ||
       event.metaKey ||
       event.altKey ||
@@ -184,5 +205,15 @@ export class PlacementController {
       target.tagName === 'TEXTAREA' ||
       target.tagName === 'SELECT'
     );
+  }
+
+  private selectRoot(root: Group): void {
+    this.selectedRoot = root;
+    this.transformControls.attach(root);
+    const id =
+      typeof root.userData.levelAssetId === 'string'
+        ? root.userData.levelAssetId
+        : root.name;
+    this.onSelectionChange(id, root);
   }
 }

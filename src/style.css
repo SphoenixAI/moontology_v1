@@ -1,16 +1,12 @@
 :root {
-  color: #f2f5f7;
-  background: #090b0e;
+  color: rgb(245 243 239 / 92%);
+  background: #0a0a0b;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --panel: rgb(13 16 20 / 90%);
-  --panel-border: rgb(255 255 255 / 14%);
-  --muted: #a9b0b8;
-  --accent: #65ecd0;
   --warning: #f0b65b;
 }
 
@@ -44,27 +40,61 @@ input {
   touch-action: none;
 }
 
-#debug-ui {
+#debug-ui,
+#operations-ui {
   position: fixed;
   inset: 0;
   z-index: 10;
   pointer-events: none;
 }
 
+#operations-ui {
+  z-index: 30;
+}
+
+.moon-control-switcher {
+  width: min(280px, calc(100vw - 32px));
+}
+
+.moon-control-switcher .dock-panel__body {
+  padding: 0 8px 8px;
+}
+
+.moon-control-switcher__mode {
+  margin: 0 4px 7px;
+  color: var(--glass-text-secondary);
+  font: 0.62rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.moon-control-switcher__mode span {
+  color: var(--glass-champagne);
+}
+
+.moon-control-switcher__buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.moon-control-switcher button {
+  padding: 9px 12px;
+  cursor: pointer;
+  font: 650 0.66rem/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.moon-control-switcher button:hover,
+.moon-control-switcher button.is-active {
+  border-color: var(--glass-control-selected-border);
+}
+
 .placement-panel {
-  position: absolute;
-  top: 16px;
-  left: 16px;
   width: min(340px, calc(100vw - 32px));
-  padding: 16px;
   overflow: hidden;
-  color: #f6f8f9;
-  background: var(--panel);
-  border: 1px solid var(--panel-border);
-  border-radius: 10px;
-  box-shadow: 0 18px 45px rgb(0 0 0 / 32%);
-  backdrop-filter: blur(14px);
-  pointer-events: auto;
+}
+
+.placement-panel .dock-panel__body {
+  padding: 4px 16px 16px;
 }
 
 .placement-panel h1 {
@@ -92,8 +122,8 @@ input {
 }
 
 .world-badge--marble {
-  color: var(--accent);
-  background: rgb(101 236 208 / 10%);
+  color: var(--glass-live);
+  background: rgb(157 204 184 / 10%);
 }
 
 .panel-row {
@@ -125,22 +155,14 @@ input {
 .placement-actions button {
   min-height: 34px;
   padding: 7px 10px;
-  color: #eef3f4;
-  background: rgb(255 255 255 / 7%);
-  border: 1px solid rgb(255 255 255 / 13%);
-  border-radius: 5px;
   cursor: pointer;
   font-size: 0.69rem;
-  font-weight: 720;
-  letter-spacing: 0.055em;
-  transition:
-    border-color 120ms ease,
-    background 120ms ease;
+  font-weight: 650;
+  letter-spacing: 0.08em;
 }
 
 .placement-actions button:hover:not(:disabled) {
-  background: rgb(101 236 208 / 12%);
-  border-color: rgb(101 236 208 / 58%);
+  border-color: var(--glass-control-selected-border);
 }
 
 .placement-actions button:focus-visible,
@@ -181,29 +203,79 @@ input {
   margin: 0;
   padding: 10px;
   overflow: auto;
-  color: #c9d2d8;
-  background: rgb(0 0 0 / 25%);
-  border: 1px solid rgb(255 255 255 / 8%);
-  border-radius: 5px;
+  color: var(--glass-text-secondary);
+  background: rgb(0 0 0 / 20%);
+  border: 1px solid var(--glass-control-border);
+  border-radius: 10px;
   font: 0.66rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
   white-space: pre;
 }
 
+.humanoid-fleet-panel {
+  width: min(390px, calc(100vw - 32px));
+}
+
+.humanoid-fleet-panel .dock-panel__body {
+  padding: 4px 14px 14px;
+}
+
+.humanoid-fleet-panel h2 {
+  margin: 0 0 9px;
+  color: var(--glass-champagne);
+  font-size: 0.74rem;
+  letter-spacing: 0.1em;
+}
+
+.humanoid-fleet-panel__list {
+  display: grid;
+  gap: 7px;
+}
+
+.humanoid-fleet-panel__row {
+  display: grid;
+  gap: 2px;
+  padding: 7px 8px;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: 0.62rem/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.humanoid-fleet-panel__row:hover {
+  border-color: var(--glass-control-selected-border);
+}
+
+.humanoid-fleet-panel__row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.humanoid-fleet-panel strong {
+  color: var(--glass-text);
+  font-size: 0.66rem;
+}
+
+.humanoid-fleet-panel span {
+  color: var(--muted);
+}
+
+.humanoid-fleet-panel p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.scene-status-dock {
+  width: min(420px, calc(100vw - 32px));
+}
+
 .scene-status {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 8;
-  max-width: min(540px, calc(100vw - 32px));
-  padding: 9px 12px;
-  color: #d8dee2;
-  background: rgb(13 16 20 / 86%);
-  border: 1px solid var(--panel-border);
-  border-radius: 6px;
+  max-width: none;
+  padding: 4px 10px 10px;
+  color: inherit;
+  background: transparent;
+  border: 0;
   font-size: 0.72rem;
-  transition:
-    opacity 240ms ease,
-    transform 240ms ease;
 }
 
 .scene-status--hidden {
@@ -214,16 +286,31 @@ input {
 
 .scene-status--error {
   color: #ffc0b6;
+}
+
+.scene-status-dock:has(.scene-status--error) {
   border-color: rgb(255 110 90 / 48%);
 }
 
 @media (max-height: 680px) {
-  .placement-panel {
-    max-height: calc(100vh - 32px);
-    overflow-y: auto;
-  }
-
   .transform-output {
     max-height: 110px;
   }
 }
+
+.scene-loading-status {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 60;
+  max-width: min(340px, calc(100vw - 48px));
+  padding: 12px 16px;
+  background: #111b23;
+  border: 1px solid #52606a;
+  border-radius: 12px;
+}
+.scene-loading-status[hidden] { display: none; }
+.scene-rehearsal-panel { width: min(340px, calc(100vw - 32px)); }
+.scene-rehearsal-panel .dock-panel__body { padding: 12px; overflow: auto; }
+.scene-rehearsal-panel p { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.scene-rehearsal-panel button { margin: 3px; }

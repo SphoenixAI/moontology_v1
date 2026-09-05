@@ -47,20 +47,17 @@ input {
 }
 
 .go2-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   width: min(380px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
-  padding: 17px;
-  overflow-y: auto;
   color: #f2f5f6;
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 20px 55px rgb(0 0 0 / 38%);
   backdrop-filter: blur(14px);
-  pointer-events: auto;
+}
+
+.go2-panel .dock-panel__body {
+  padding: 4px 17px 17px;
 }
 
 .go2-panel h1 {
@@ -81,12 +78,32 @@ input {
   border-top: 1px solid var(--border);
 }
 
-.go2-panel__section h2 {
+.go2-panel__section h2,
+.go2-panel__section summary {
   margin: 0 0 9px;
   color: var(--accent);
   font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.go2-panel__section summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.go2-panel__section summary::-webkit-details-marker,
+.go2-panel__section summary::marker {
+  display: none;
+}
+
+.go2-panel__section summary::after {
+  float: right;
+  content: "▾";
+}
+
+.go2-panel__section:not([open]) summary::after {
+  content: "▸";
 }
 
 .go2-range {
@@ -131,23 +148,37 @@ input {
   background: rgb(99 230 202 / 17%);
 }
 
-#go2-status,
-.go2-back-link {
-  position: fixed;
-  left: 16px;
-  z-index: 8;
+.go2-status-dock,
+.go2-back-dock {
   color: #d7dde1;
   background: rgb(14 18 22 / 88%);
   border: 1px solid var(--border);
   border-radius: 6px;
+}
+
+.go2-status-dock .dock-panel__body,
+.go2-back-dock .dock-panel__body {
+  padding: 4px 10px 10px;
+}
+
+#go2-status,
+.go2-back-link {
+  color: inherit;
+  background: transparent;
+  border: 0;
   font-size: 0.72rem;
 }
 
 #go2-status {
-  bottom: 16px;
-  max-width: calc(100vw - 32px);
-  padding: 9px 12px;
+  max-width: none;
+  padding: 0;
   white-space: pre-line;
+}
+
+.go2-back-link {
+  display: inline-block;
+  padding: 2px 0 0;
+  text-decoration: none;
 }
 
 .go2-status--ready {
@@ -156,23 +187,12 @@ input {
 
 .go2-status--error {
   color: #ffb8ad !important;
-  border-color: rgb(255 105 86 / 50%) !important;
 }
 
-.go2-back-link {
-  top: 16px;
-  padding: 8px 10px;
-  text-decoration: none;
+.go2-status-dock:has(.go2-status--error) {
+  border-color: rgb(255 105 86 / 50%);
 }
 
 .go2-back-link:hover {
   color: var(--accent);
-  border-color: rgb(99 230 202 / 43%);
-}
-
-@media (max-width: 720px) {
-  .go2-panel {
-    top: 58px;
-    max-height: calc(100vh - 130px);
-  }
 }

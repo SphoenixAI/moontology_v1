@@ -1,28 +1,21 @@
 .go2-map-panel {
-  position: absolute;
-  top: 16px;
-  right: 16px;
   width: min(300px, calc(100vw - 32px));
-  padding: 14px;
-  color: #eef4f3;
-  background: rgb(13 16 20 / 90%);
-  border: 1px solid rgb(255 255 255 / 14%);
-  border-radius: 10px;
-  box-shadow: 0 18px 45px rgb(0 0 0 / 32%);
-  backdrop-filter: blur(14px);
-  pointer-events: auto;
+}
+
+.go2-map-panel .dock-panel__body {
+  padding: 4px 14px 14px;
 }
 
 .go2-map-panel h2 {
   margin: 0 0 7px;
-  color: #65ecd0;
+  color: var(--glass-champagne);
   font-size: 0.74rem;
   letter-spacing: 0.09em;
 }
 
 .go2-map-panel p {
   margin: 0 0 11px;
-  color: #a9b0b8;
+  color: var(--glass-text-secondary);
   font: 0.68rem/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
@@ -40,9 +33,9 @@
   width: 27px;
   height: 24px;
   place-items: center;
-  background: rgb(255 255 255 / 8%);
-  border: 1px solid rgb(255 255 255 / 18%);
-  border-radius: 4px;
+  background: var(--glass-control-background);
+  border: 1px solid var(--glass-control-border);
+  border-radius: 6px;
   box-shadow: 0 2px 0 rgb(0 0 0 / 45%);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -53,25 +46,26 @@
   gap: 5px 10px;
   margin: 0 0 12px;
   padding-top: 10px;
-  border-top: 1px solid rgb(255 255 255 / 10%);
+  border-top: 1px solid var(--glass-panel-border);
   font: 0.66rem/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .go2-map-panel dt {
-  color: #a9b0b8;
+  color: var(--glass-text-secondary);
 }
 
 .go2-map-panel dd {
   margin: 0;
-  color: #fff;
+  color: var(--glass-text);
 }
 
 .go2-map-panel a {
   display: block;
   padding: 7px 9px;
-  color: #dff9f3;
-  border: 1px solid rgb(101 236 208 / 36%);
-  border-radius: 5px;
+  color: var(--glass-text);
+  background: var(--glass-control-background);
+  border: 1px solid var(--glass-control-border);
+  border-radius: 10px;
   font-size: 0.63rem;
   font-weight: 720;
   letter-spacing: 0.045em;
@@ -80,13 +74,28 @@
 }
 
 .go2-map-panel a:hover {
-  background: rgb(101 236 208 / 11%);
+  background: var(--glass-control-hover);
+  border-color: var(--glass-control-selected-border);
 }
 
-@media (max-width: 720px) {
-  .go2-map-panel {
-    top: auto;
-    right: 16px;
-    bottom: 62px;
-  }
+.go2-sync-panel {
+  width: min(320px, calc(100vw - 32px));
+}
+
+.go2-sync-panel__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.go2-sync-panel__actions button {
+  min-height: 28px;
+  padding: 4px 6px;
+  font: 0.62rem/1.2 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.08em;
+}
+
+.go2-sync-panel__actions button:hover {
+  border-color: var(--glass-control-selected-border);
 }

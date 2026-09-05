@@ -1,5 +1,6 @@
 import { Group, MathUtils } from 'three';
 import type { Go2LegJoint } from '../go2/go2Joints';
+import { DockablePanel } from '../ui/DockablePanel';
 
 interface RangeRowOptions {
   label: string;
@@ -12,7 +13,7 @@ interface RangeRowOptions {
 }
 
 export class Go2DebugPanel {
-  private readonly element = document.createElement('aside');
+  private readonly dock: DockablePanel;
   private readonly root: Group;
   private readonly joints: readonly Go2LegJoint[];
   private readonly resetters: Array<() => void> = [];
@@ -24,17 +25,20 @@ export class Go2DebugPanel {
   ) {
     this.root = root;
     this.joints = joints;
-    this.element.className = 'go2-panel';
-
-    const title = document.createElement('h1');
-    title.textContent = 'GO2 URDF ARTICULATION TEST';
+    this.dock = new DockablePanel({
+      id: 'go2-articulation',
+      title: 'GO2 URDF ARTICULATION TEST',
+      host,
+      className: 'go2-panel',
+      defaultMode: 'top-right',
+    });
 
     const source = document.createElement('p');
     source.className = 'go2-panel__source';
     source.textContent =
       'Official Unitree URDF · 12 actuated joints detected from hierarchy';
 
-    this.element.append(title, source);
+    this.dock.body.append(source);
     this.buildRootSection();
     this.buildJointSections();
 
@@ -47,13 +51,11 @@ export class Go2DebugPanel {
         reset();
       }
     });
-    this.element.append(resetButton);
-
-    host.append(this.element);
+    this.dock.body.append(resetButton);
   }
 
   dispose(): void {
-    this.element.remove();
+    this.dock.dispose();
   }
 
   private buildRootSection(): void {
@@ -161,13 +163,14 @@ export class Go2DebugPanel {
   }
 
   private createSection(titleText: string): HTMLElement {
-    const section = document.createElement('section');
+    const section = document.createElement('details');
     section.className = 'go2-panel__section';
+    section.open = true;
 
-    const title = document.createElement('h2');
+    const title = document.createElement('summary');
     title.textContent = titleText;
     section.append(title);
-    this.element.append(section);
+    this.dock.body.append(section);
     return section;
   }
 

@@ -1,0 +1,152 @@
+[
+  {
+    "source": "/Users/sphoenix/moontology/public/models/humanoids/full-fidelity/Dig And Plant Seeds.fbx",
+    "source_sha256": "ccbf281cee901732f512167d11bcfbd2e01162b48a26c0bd53fd2ee708dcc44b",
+    "output": "/Users/sphoenix/moontology/public/models/humanoids/full-detail-glb/Dig And Plant Seeds.glb",
+    "mesh_counts": {
+      "tripo_node_6adef597-77e2-431b-9c7c-32ffbf671299": {
+        "vertices": 986545,
+        "polygons": 1919821
+      }
+    },
+    "images": [
+      {
+        "name": "h01-empty_basecolor.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "h01-empty_normal.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "bytes": 108343140,
+    "decimation": false,
+    "all_skin_influences_exported": true
+  },
+  {
+    "source": "/Users/sphoenix/moontology/public/models/humanoids/full-fidelity/Writing.fbx",
+    "source_sha256": "7e688036fd3b0eb5152655a93e9f64dadfc064be484f14cfedaa3ef3628662d9",
+    "output": "/Users/sphoenix/moontology/public/models/humanoids/full-detail-glb/Writing.glb",
+    "mesh_counts": {
+      "tripo_node_6adef597-77e2-431b-9c7c-32ffbf671299": {
+        "vertices": 986545,
+        "polygons": 1919821
+      }
+    },
+    "images": [
+      {
+        "name": "h01-empty_basecolor.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "h01-empty_normal.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "bytes": 108334328,
+    "decimation": false,
+    "all_skin_influences_exported": true
+  },
+  {
+    "source": "/Users/sphoenix/moontology/public/models/humanoids/full-fidelity/Kneeling Inspecting.fbx",
+    "source_sha256": "2253a1069c20cca28acfa85c764ad13c678d0ec3a2e9dcada4182a3f3ed1eb04",
+    "output": "/Users/sphoenix/moontology/public/models/humanoids/full-detail-glb/Kneeling Inspecting.glb",
+    "mesh_counts": {
+      "tripo_node_6adef597-77e2-431b-9c7c-32ffbf671299": {
+        "vertices": 986545,
+        "polygons": 1919821
+      }
+    },
+    "images": [
+      {
+        "name": "h01-empty_basecolor.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "h01-empty_normal.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "bytes": 108363808,
+    "decimation": false,
+    "all_skin_influences_exported": true
+  },
+  {
+    "source": "/Users/sphoenix/moontology/public/models/humanoids/full-fidelity/h01-sweat.fbx",
+    "source_sha256": "0d32f508f8593b4cef65206d9de0be326f15b5ccb8d3f161b4c53b540d9cacd5",
+    "output": "/Users/sphoenix/moontology/public/models/humanoids/full-detail-glb/h01-sweat.glb",
+    "mesh_counts": {
+      "tripo_node_6adef597-77e2-431b-9c7c-32ffbf671299": {
+        "vertices": 986545,
+        "polygons": 1919821
+      }
+    },
+    "images": [
+      {
+        "name": "h01-empty_basecolor.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "h01-empty_normal.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "bytes": 108322960,
+    "decimation": false,
+    "all_skin_influences_exported": true
+  },
+  {
+    "source": "/Users/sphoenix/moontology/public/models/humanoids/full-fidelity/Defeat.fbx",
+    "source_sha256": "f032df2c65cf4b87126a34e05dc9e856162513be9c96d1c62a19a029de95cbb0",
+    "output": "/Users/sphoenix/moontology/public/models/humanoids/full-detail-glb/Defeat.glb",
+    "mesh_counts": {
+      "tripo_node_6adef597-77e2-431b-9c7c-32ffbf671299": {
+        "vertices": 986545,
+        "polygons": 1919821
+      }
+    },
+    "images": [
+      {
+        "name": "h01-empty_basecolor.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      },
+      {
+        "name": "h01-empty_normal.jpg",
+        "size": [
+          4096,
+          4096
+        ]
+      }
+    ],
+    "bytes": 108336340,
+    "decimation": false,
+    "all_skin_influences_exported": true
+  }
+]

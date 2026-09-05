@@ -1,11 +1,13 @@
 import type { AnimationClip, Group, Object3D } from 'three';
 import type { AnimationBinding } from '../animation/AnimationSystem';
+import type { HumanoidNormalization } from '../humanoids/HumanoidFleet';
 import type { LevelAssetConfig } from '../levels/types';
 
 export interface LoadedAsset {
   config: LevelAssetConfig;
   root: Group;
   model: Object3D;
+  normalization: HumanoidNormalization | null;
   animations: readonly AnimationClip[];
   animation: AnimationBinding | null;
 }
