@@ -1,0 +1,221 @@
+import type {
+  SparkRenderer as SparkRendererInstance,
+  SplatMesh as SplatMeshInstance,
+} from '@sparkjsdev/spark';
+import {
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  Scene,
+  WebGLRenderer,
+  type Clock,
+  type Timer,
+} from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import type { WorldConfig, WorldMode } from '../levels/types';
+import { createCriticalGameplayColliders } from './createCriticalGameplayColliders';
+import {
+  createPlaceholderWorld,
+  createStagingCollisionFloor,
+} from './placeholderWorld';
+
+export interface WorldHandle {
+  root: Group;
+  visualLayer: Group;
+  collisionLayer: Group;
+  generatedColliderLayer: Group;
+  criticalGameplayColliders: Group;
+  requestedMode: WorldMode;
+  activeMode: WorldMode;
+  colliderAvailable: boolean;
+  fallbackReason: string | null;
+  setColliderVisible: (visible: boolean) => void;
+  dispose: () => void;
+}
+
+interface LoadWorldOptions {
+  config: WorldConfig;
+  renderer: WebGLRenderer;
+  scene: Scene;
+  timer: Timer;
+}
+
+const formatError = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
+const assertResourceAvailable = async (url: string): Promise<void> => {
+  try {
+    const response = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status} ${response.statusText}`);
+    }
+    if (contentType.includes('text/html')) {
+      throw new Error(`Unexpected content type "${contentType}"`);
+    }
+  } catch (error) {
+    throw new Error(
+      `Resource check failed for "${url}": ${formatError(error)}`,
+      { cause: error },
+    );
+  }
+};
+
+export const loadWorld = async ({
+  config,
+  renderer,
+  scene,
+  timer,
+}: LoadWorldOptions): Promise<WorldHandle> => {
+  const worldRoot = new Group();
+  worldRoot.name = 'world-root';
+  worldRoot.position.set(
+    config.transform.position.x,
+    config.transform.position.y,
+    config.transform.position.z,
+  );
+  worldRoot.rotation.y = config.transform.rotationY;
+  worldRoot.scale.setScalar(config.transform.scale);
+
+  const visualLayer = new Group();
+  visualLayer.name = 'world-visual-layer';
+
+  const collisionLayer = new Group();
+  collisionLayer.name = 'world-collision-layer';
+
+  const generatedColliderLayer = new Group();
+  generatedColliderLayer.name = 'world-labs-generated-collider';
+  generatedColliderLayer.visible = false;
+
+  const criticalGameplayColliders = createCriticalGameplayColliders();
+  collisionLayer.add(
+    generatedColliderLayer,
+    criticalGameplayColliders,
+  );
+  worldRoot.add(visualLayer, collisionLayer);
+  scene.add(worldRoot);
+
+  let activeMode: WorldMode = 'placeholder';
+  let fallbackReason: string | null = null;
+  let sparkRenderer: SparkRendererInstance | null = null;
+  let splat: SplatMeshInstance | null = null;
+  let collider: Group | null = null;
+  let colliderMaterial: MeshBasicMaterial | null = null;
+
+  if (config.mode === 'marble') {
+    console.info('[WorldLabs] loading splat...', config.visualSrc);
+    try {
+      await assertResourceAvailable(config.visualSrc);
+      const { SparkRenderer, SplatMesh } = await import(
+        '@sparkjsdev/spark'
+      );
+      const sharedSparkClock = {
+        getElapsedTime: () => timer.getElapsed(),
+      } as Clock;
+      sparkRenderer = new SparkRenderer({
+        renderer,
+        clock: sharedSparkClock,
+      });
+      sparkRenderer.name = 'spark-renderer';
+      scene.add(sparkRenderer);
+
+      const isRadLodFile = /\.rad(?:$|\?)/i.test(config.visualSrc);
+      splat = new SplatMesh({
+        url: config.visualSrc,
+        lod: isRadLodFile ? undefined : true,
+        raycastable: false,
+      });
+      splat.name = 'world-labs-marble-splat';
+      splat.userData.worldLabsVisual = true;
+      visualLayer.add(splat);
+      await splat.initialized;
+      activeMode = 'marble';
+      console.info('[WorldLabs] splat loaded', config.visualSrc);
+    } catch (error) {
+      fallbackReason =
+        `Splat failed to load from "${config.visualSrc}": ${formatError(error)}`;
+      console.warn('[WorldLabs] splat failed', {
+        url: config.visualSrc,
+        error,
+      });
+      console.warn(`[WorldLabs] ${fallbackReason} Using placeholder world.`);
+      splat?.removeFromParent();
+      splat?.dispose();
+      splat = null;
+      sparkRenderer?.removeFromParent();
+      sparkRenderer?.dispose();
+      sparkRenderer = null;
+    }
+  }
+
+  if (activeMode === 'placeholder') {
+    createPlaceholderWorld(visualLayer, criticalGameplayColliders);
+  } else {
+    createStagingCollisionFloor(criticalGameplayColliders);
+  }
+
+  if (config.mode === 'marble') {
+    console.info('[WorldLabs] loading collider...', config.colliderSrc);
+    try {
+      await assertResourceAvailable(config.colliderSrc);
+      const gltf = await new GLTFLoader().loadAsync(config.colliderSrc);
+      collider = gltf.scene;
+      collider.name = 'world-labs-collider-mesh';
+      collider.userData.worldCollision = true;
+      collider.userData.generatedByWorldLabs = true;
+
+      colliderMaterial = new MeshBasicMaterial({
+        color: 0x35e6c1,
+        wireframe: true,
+        transparent: true,
+        opacity: 0.42,
+        depthWrite: false,
+        visible: false,
+      });
+      collider.traverse((child) => {
+        if (child instanceof Mesh) {
+          child.material = colliderMaterial!;
+          child.castShadow = false;
+          child.receiveShadow = false;
+          child.userData.worldCollision = true;
+        }
+      });
+
+      generatedColliderLayer.add(collider);
+      console.info('[WorldLabs] collider loaded', config.colliderSrc);
+    } catch (error) {
+      console.warn('[WorldLabs] collider failed', {
+        url: config.colliderSrc,
+        error,
+      });
+    }
+  }
+
+  const setColliderVisible = (visible: boolean): void => {
+    const showCollider = Boolean(collider) && visible;
+    generatedColliderLayer.visible = showCollider;
+    if (colliderMaterial) {
+      colliderMaterial.visible = showCollider;
+    }
+  };
+
+  return {
+    root: worldRoot,
+    visualLayer,
+    collisionLayer,
+    generatedColliderLayer,
+    criticalGameplayColliders,
+    requestedMode: config.mode,
+    activeMode,
+    colliderAvailable: collider !== null,
+    fallbackReason,
+    setColliderVisible,
+    dispose: () => {
+      splat?.dispose();
+      sparkRenderer?.dispose();
+      colliderMaterial?.dispose();
+      worldRoot.removeFromParent();
+      sparkRenderer?.removeFromParent();
+    },
+  };
+};
