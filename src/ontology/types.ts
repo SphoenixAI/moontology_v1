@@ -86,6 +86,8 @@ export interface OntologyProperties {
   source?: string;
   subjectId?: string;
   severity?: 'INFO' | 'AMBER' | 'RED';
+  rehearsalState?: string;
+  rehearsalAction?: string;
 }
 
 export interface OntologyObject<
@@ -182,7 +184,7 @@ export interface EvidenceComparison {
   expected: EvidenceState;
   reported: EvidenceState;
   observed: EvidenceState;
-  result: 'ALIGNED' | 'DISCREPANCY';
+  result: 'ALIGNED' | 'DISCREPANCY' | 'UNVERIFIED';
 }
 
 export interface ImpactEntry {

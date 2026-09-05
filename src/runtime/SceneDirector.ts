@@ -12,6 +12,15 @@ export class SceneDirector {
   private elapsed = 0;
   private cooldown = 0;
 
+  private readonly order: readonly string[];
+  constructor(order: readonly string[] = []) { this.order = order; }
+
+  get nextId(): string | null {
+    return this.order.find(id => !this.completed.has(id)) ?? null;
+  }
+
+  get isCoolingDown(): boolean { return this.cooldown > 0; }
+
   arm(): void {
     if (this.state === 'complete') return;
     this.state = 'running';
@@ -28,6 +37,7 @@ export class SceneDirector {
 
   cue(id: string): boolean {
     if (this.state !== 'running' || this.activeId || this.cooldown > 0 || this.completed.has(id)) return false;
+    if (this.order.length && id !== this.nextId) return false;
     this.activeId = id;
     this.elapsed = 0;
     this.dwellId = null;
@@ -53,6 +63,9 @@ export class SceneDirector {
     }
     // Suspended tabs and stalled frames must never fast-forward a cue.
     if (dt > 0.25) { this.pause('Frame stalled. Resume when ready.'); return; }
+    // Match the animation clock's step cap, so slow frames cannot finish a
+    // cue before its animation reaches the same point.
+    dt = Math.min(dt, 0.1);
     if (this.activeId) {
       const target = targets.find(({ id }) => id === this.activeId);
       if (!target) { this.pause('Active humanoid unavailable.'); return; }
@@ -73,6 +86,7 @@ export class SceneDirector {
     if (this.cooldown > 0) { this.cooldown -= dt; return; }
     const nearest = targets
       .filter(({ id }) => !this.completed.has(id))
+      .filter(({ id }) => !this.order.length || id === this.nextId)
       .map(target => ({ target, distance: Math.hypot(robot.x - target.x, robot.z - target.z) }))
       .filter(({ distance }) => distance <= 2)
       .sort((a, b) => a.distance - b.distance || a.target.id.localeCompare(b.target.id))[0];

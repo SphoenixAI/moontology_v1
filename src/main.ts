@@ -1,3 +1,4 @@
+import type { DemoRouteRehearsal } from './debug/DemoRouteRehearsal';
 import './style.css';
 import type { AirlockRehearsal } from './debug/AirlockRehearsal';
 import { SceneRehearsalPanel } from './ui/SceneRehearsalPanel';
@@ -250,6 +251,7 @@ let activeCalibration: SceneRobotCalibration = startInScene2
   : SCENE_1_CALIBRATION;
 let moonControlSystem: MoonControlSystem | null = null;
 let airlockRehearsal: AirlockRehearsal | null = null;
+let demoRouteRehearsal: DemoRouteRehearsal | null = null;
 let rehearsalPanel: SceneRehearsalPanel | null = null;
 let disposed = false;
 let spatialSyncElapsed = 0;
@@ -327,7 +329,8 @@ const renderLoopStarted = performanceGovernor.start((time) => {
       });
     }
   }
-  orbitControls.update();
+  if (orbitControls.enabled) orbitControls.update();
+  moonControlSystem?.update(deltaSeconds);
   renderer.render(scene, camera);
 });
 
@@ -371,6 +374,7 @@ const dispose = (): void => {
   unsubscribeOntologySelection();
   operationalOverlay.dispose();
   rehearsalPanel?.dispose();
+  demoRouteRehearsal?.dispose();
   airlockTransition?.dispose();
   airlockRehearsal?.dispose();
   sceneEntityHighlighter.dispose();
@@ -527,7 +531,7 @@ const bootstrap = async (): Promise<void> => {
   }
 
   rehearsalPanel = new SceneRehearsalPanel(debugHost, registry,
-    level1.assets.filter(asset => asset.type === 'humanoid').map(asset => asset.id));
+    level1.assets.filter(asset => asset.type === 'humanoid').map(asset => asset.id), ontology, scene);
   staticAssetSystem.initialize();
   placementPanel?.setAssetCount(registry.size, level1.assets.length);
   if (developmentToolsEnabled) {
@@ -556,6 +560,13 @@ const bootstrap = async (): Promise<void> => {
       robotController: go2Controller,
       placementController,
     });
+
+    if (import.meta.env.DEV && new URLSearchParams(location.search).has('routeTest')) {
+      const { DemoRouteRehearsal } = await import('./debug/DemoRouteRehearsal');
+      if (!disposed) demoRouteRehearsal = new DemoRouteRehearsal(go2Agent, rehearsalPanel.director,
+        () => !!go2TelemetryClient?.getState().robotConnected || !!go2TelemetryClient?.isDriving() ||
+          activeCalibration.id !== SCENE_1_CALIBRATION.id || !!airlockTransition && airlockTransition.getState() !== 'scene1');
+    }
 
     if (developmentToolsEnabled) {
       go2Panel = new Go2MapPanel(debugHost, go2Agent);

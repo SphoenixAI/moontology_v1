@@ -33,6 +33,7 @@ export class SceneEntityHighlighter {
   private readonly size = new Vector3();
   private readonly center = new Vector3();
   private target: Object3D | null = null;
+  private boundsTarget: Object3D | null = null;
 
   constructor() {
     this.object.name = 'ontology-selection-highlight';
@@ -51,7 +52,13 @@ export class SceneEntityHighlighter {
   }
 
   select(target: Object3D | null, discrepancy: boolean): void {
-    this.target = target;
+    if (this.target !== target) {
+      this.target = target;
+      this.boundsTarget = target;
+      target?.traverse(child => {
+        if (child.userData.humanoidSelectionProxy) this.boundsTarget = child;
+      });
+    }
     this.object.visible = target !== null;
     if (!target) {
       return;
@@ -64,11 +71,11 @@ export class SceneEntityHighlighter {
   }
 
   update(): void {
-    if (!this.target) {
+    if (!this.target || !this.boundsTarget) {
       return;
     }
-    this.target.updateWorldMatrix(true, true);
-    this.bounds.setFromObject(this.target, true);
+    this.boundsTarget.updateWorldMatrix(true, true);
+    this.bounds.setFromObject(this.boundsTarget);
     if (this.bounds.isEmpty()) {
       this.object.visible = false;
       return;
@@ -77,7 +84,7 @@ export class SceneEntityHighlighter {
     this.object.visible = true;
     this.bounds.getCenter(this.center);
     this.bounds.getSize(this.size);
-    this.box.setFromObject(this.target);
+    this.box.setFromObject(this.boundsTarget);
 
     const radius = Math.max(this.size.x, this.size.z, 0.5) * 0.62;
     this.ring.scale.setScalar(radius / 0.49);
@@ -90,6 +97,7 @@ export class SceneEntityHighlighter {
 
   dispose(): void {
     this.target = null;
+    this.boundsTarget = null;
     this.box.geometry.dispose();
     (this.box.material as LineBasicMaterial).dispose();
     this.ring.geometry.dispose();

@@ -28,9 +28,11 @@ npm run build
 
 Five humanoids load from full-detail GLB derivatives, with identical worker
 geometry shared across clips. Verified FBX duplicates are preserved in
-`public/models/humanoids/full-fidelity/`; original FBXs remain untouched. Expand **Scene rehearsal**, check 5/5 animated
-humanoids, then **Arm / Resume** and approach an actor with Go2. Each clip
-plays once per run. Use **Pause cues** or **Reset run** to direct playback.
+`public/models/humanoids/full-fidelity/`; original FBXs remain untouched. The **Scene 1 · Demo route** panel guides Go2 through inventory writing, digging,
+kneeling inspection, fatigue and assistance checks, then the habitat door.
+Use **Arm / Resume**, follow the gold marker with WASD/arrows, and stop near
+each actor to play its cue once. **FOLLOW GO2** is the default chase camera;
+**FREE CAMERA** enables orbiting. **Pause** and **Reset route** control the rehearsal.
 See [machine ownership and rehearsal procedure](docs/scene-rehearsal.md).
 
 ## Operational intelligence overlay

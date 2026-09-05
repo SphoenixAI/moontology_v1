@@ -1,4 +1,3 @@
-import { Go2FollowCamera } from './Go2FollowCamera';
 import {
   PerspectiveCamera,
   Quaternion,
@@ -27,8 +26,8 @@ interface MoonControlSystemOptions {
 
 export class MoonControlSystem {
   private readonly dock: DockablePanel | null;
-  private readonly robotButton = this.createButton('FOLLOW GO2');
-  private readonly cameraButton = this.createButton('FREE CAMERA');
+  private readonly robotButton = this.createButton('ROBOT');
+  private readonly cameraButton = this.createButton('CAMERA');
   private readonly mapButton: HTMLButtonElement | null;
   private readonly recenterButton = this.createButton('RECENTER');
   private readonly modeValue = document.createElement('span');
@@ -37,7 +36,6 @@ export class MoonControlSystem {
   private readonly orbitControls: OrbitControls;
   private readonly robotController: ManualGo2Controller;
   private readonly placementController: PlacementController | null;
-  private readonly followCamera: Go2FollowCamera;
   private mode: ControlMode = MOONTOLOGY_CONFIG.controls.defaultMode;
 
   constructor({
@@ -50,7 +48,6 @@ export class MoonControlSystem {
     placementController,
   }: MoonControlSystemOptions) {
     this.camera = camera;
-    this.followCamera = new Go2FollowCamera(camera, go2Root);
     this.go2Root = go2Root;
     this.orbitControls = orbitControls;
     this.robotController = robotController;
@@ -127,14 +124,7 @@ export class MoonControlSystem {
         mode === ControlModes.MAP_EDIT,
       );
     }
-    if (mode === ControlModes.ROBOT) this.update(0, true);
     console.info(`[Controls] Mode → ${mode}`);
-  }
-
-  update(dt: number, snap = false): void {
-    if (this.mode !== ControlModes.ROBOT) return;
-    this.followCamera.update(dt, snap);
-    this.orbitControls.target.copy(this.followCamera.target);
   }
 
   dispose(): void {
@@ -160,8 +150,7 @@ export class MoonControlSystem {
   };
 
   recenterOnGo2(): void {
-    if (this.mode === ControlModes.ROBOT) this.update(0, true);
-    else this.recenter();
+    this.recenter();
   }
 
   private readonly recenter = (): void => {

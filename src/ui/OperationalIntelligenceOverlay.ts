@@ -1,4 +1,5 @@
 import type { OntologyStore } from '../ontology/OntologyStore';
+import { SCENE_1_STOPS } from '../levels/scene1DemoRoute';
 import type {
   OntologyObject,
   OntologyRelation,
@@ -442,6 +443,10 @@ export class OperationalIntelligenceOverlay {
       })
       .join('');
 
+    const routePoints = [...SCENE_1_STOPS.map(stop => stop.id), 'Airlock-2A']
+      .map(id => getObject(this.snapshot, id))
+      .filter((object): object is OntologyObject => !!object)
+      .map(object => { const p = point(object); return `${p.x},${p.y}`; }).join(' ');
     const nodes = spatialObjects
       .filter((object) => !object.properties.footprint)
       .map((object) => {
@@ -472,6 +477,7 @@ export class OperationalIntelligenceOverlay {
         <div class="ops-map__axis ops-map__axis--x">X ${minX}m <span>${maxX}m</span></div>
         <div class="ops-map__axis ops-map__axis--z">Z ${maxZ}m <span>${minZ}m</span></div>
         <svg class="ops-map__relations" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <polyline points="${routePoints}" fill="none" stroke="#ddc795" stroke-width="0.55" stroke-dasharray="1.4 1.2" opacity="0.8" />
           ${mapRelations}
         </svg>
         ${zones}
@@ -545,6 +551,8 @@ export class OperationalIntelligenceOverlay {
 
   private renderEvidence(): string {
     const { evidence } = this.snapshot.analysis;
+    const selected = getObject(this.snapshot, this.snapshot.selectedEntityId);
+    const cue = selected?.properties.rehearsalAction;
     const cells = [
       ['EXPECTED', evidence.expected, 'plan'],
       ['REPORTED', evidence.reported, 'reported'],
@@ -552,6 +560,7 @@ export class OperationalIntelligenceOverlay {
     ] as const;
     return `
       <div class="ops-evidence">
+        ${cue ? `<article class="ops-evidence__cell"><header><span>SCENE CUE</span><small>SIMULATED</small></header><strong>${escapeHtml(cue)}</strong><p>${escapeHtml(selected?.properties.rehearsalState ?? 'READY')}</p><em>Physical evidence remains separate</em></article>` : ''}
         ${cells
           .map(
             ([label, item, className]) => `
@@ -574,7 +583,7 @@ export class OperationalIntelligenceOverlay {
         <div class="ops-evidence__result ${evidence.result === 'DISCREPANCY' ? 'is-discrepancy' : 'is-aligned'}">
           <span>RESULT</span>
           <strong>${evidence.result}</strong>
-          <small>${evidence.result === 'DISCREPANCY' ? 'Reported state is not supported by physical progress' : 'Evidence channels agree'}</small>
+          <small>${evidence.result === 'DISCREPANCY' ? 'Reported state is not supported by physical progress' : evidence.result === 'UNVERIFIED' ? 'Awaiting physical observation and telemetry' : 'Evidence channels agree'}</small>
         </div>
       </div>
     `;

@@ -178,3 +178,52 @@ requested at 23:46:45.421 UTC, loading at 23:46:47.187, loaded at 23:46:53.351
 on September 4, 2026. This was about 7.93 seconds after threshold entry with the
 full-detail assets resident. It establishes successful integration, not measured
 frame-rate or live-demo readiness on the Air/Intel/Orin infrastructure.
+
+## Scenic route and follow camera
+
+Scene 1 now opens behind Unitree Go2. FOLLOW GO2 follows AgentRoot position and
+yaw smoothly every frame, keeping animated joints out of camera motion. FREE
+CAMERA releases the view for orbiting; returning to FOLLOW GO2 recenters it.
+WASD/arrows retain manual virtual driving. This does not send robot commands.
+
+The shared route definition is `src/levels/scene1DemoRoute.ts`:
+
+1. H04 — writing an inventory log beside the logistics rover to the east.
+2. H01 — digging/sample-bed work beside the two separated excavators to the west.
+3. H02 — kneeling inspection at the cable connector on the northwest side.
+4. H03 — the sweat clip as a scripted fatigue check beside the support rover.
+5. H06 — the defeat clip as a scripted slumped-posture assistance check near the habitat.
+6. Habitat facade door — existing automatic transition into World Labs Scene 2.
+
+The five vehicle centers are more than five meters apart. Humanoid trigger
+centers are more than four meters apart, with viewing marks inside the two-meter
+proximity zones. A single gold ring marks the next viewing position. The
+ontology map shows a dotted itinerary and uses the same actor placements.
+These are virtual staging clearances, not physical obstacle/navigation guarantees.
+
+Arm / Resume enables the route. Only the next actor can cue, after one second
+within two meters, or with Play nearby cue. Cues play once, with a two-second
+gap and twenty-second cap. Pause, hidden tabs, stale telemetry and stalled
+frames hold playback; Reset route restores the initial clip poses. The camera
+and original map quality do not depend on arming the route. The door remains
+available for direct exploration without completing the route.
+
+Each cue updates its ontology rehearsal state and selects the actor. Animation
+playback does not fabricate physical telemetry, observations, task completion,
+or diagnosis. Physical evidence remains UNVERIFIED until supplied. Clip names,
+behavior descriptions and task relationships now match the staged actions;
+removed H05 reports and associations have been removed from the active seed.
+
+Development-only `?routeTest` exposes virtual positioning at the next stop for
+visual QA. It refuses connected/active hardware and scene transitions, and is
+excluded from production. The normal demo contains only route controls.
+
+Verification: build, lint and 16 automated checks passed. Browser QA staged
+virtual Go2 at each viewing stop and confirmed all five proximity cues completed
+in order without replay, finishing with habitat guidance. The chase view and
+local equipment were visually checked at each stop. The ontology UI showed
+H03 / Fatigue check / SIMULATED / COMPLETE with physical evidence UNVERIFIED.
+QA staging verifies local views and cue behavior, not a continuous driven route
+or physical collision clearance. The selection outline now reads the existing
+lightweight humanoid proxy rather than scanning every hero-mesh vertex each
+frame; character meshes, textures and native render resolution remain intact.

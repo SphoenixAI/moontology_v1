@@ -65,6 +65,19 @@ export class OntologyStore {
     this.commit();
   }
 
+  /** Scene playback is distinct from physical observations and task evidence. */
+  setSceneCue(id: string, action: string, state: 'READY' | 'PLAYING' | 'PAUSED' | 'COMPLETE'): void {
+    const subject = this.requireObject(id);
+    if (subject.properties.rehearsalState === state && subject.properties.rehearsalAction === action) return;
+    subject.properties.rehearsalState = state;
+    subject.properties.rehearsalAction = action;
+    if (state === 'PLAYING') {
+      this.selectedEntityId = id;
+      this.mission.phase = `SCENE REHEARSAL · ${action}`;
+    }
+    this.commit();
+  }
+
   subscribe(listener: OntologyListener): () => void {
     this.listeners.add(listener);
     listener(this.getSnapshot());
@@ -524,7 +537,7 @@ export class OntologyStore {
       },
       result: this.discrepancyIds.has(object.id)
         ? 'DISCREPANCY'
-        : 'ALIGNED',
+        : !latestObservation || !report ? 'UNVERIFIED' : 'ALIGNED',
     };
   }
 

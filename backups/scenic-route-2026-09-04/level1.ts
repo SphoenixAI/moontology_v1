@@ -1,4 +1,3 @@
-import { SCENE_1_STOPS, SCENE_1_ROUTE_SPAWN } from './scene1DemoRoute';
 import type {
   LevelConfig,
   WorldMode,
@@ -21,7 +20,12 @@ export const WORLD_LABS_TRANSFORM: WorldTransformConfig = {
   scale: 1,
 };
 
-export const GO2_SPAWN = SCENE_1_ROUTE_SPAWN;
+export const GO2_SPAWN = {
+  x: 1.5,
+  y: 0,
+  z: 1.5,
+  rotationY: -Math.PI / 2,
+};
 
 export const HUMANOID_FLEET_SCALE = 1;
 
@@ -134,15 +138,3 @@ export const level1: LevelConfig = {
   workGroups: SCENE_1_WORK_GROUPS,
   staticSystems: SCENE_1_STATIC_SYSTEMS,
 };
-
-for (const stop of SCENE_1_STOPS) {
-  const actor = level1.assets.find(asset => asset.id === stop.id);
-  if (actor) {
-    actor.position = [...stop.position];
-    actor.rotation = [0, stop.yaw, 0];
-    actor.role = stop.title;
-    actor.state = 'AWAITING_CUE';
-    actor.loop = false;
-    actor.association = { entityId: stop.id, taskId: stop.taskId, relatedEntityIds: [stop.equipment], workGroupIds: [] };
-  }
-}

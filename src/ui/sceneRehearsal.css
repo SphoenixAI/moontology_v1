@@ -1,0 +1,11 @@
+.scene-rehearsal-panel { width: min(310px, calc(100vw - 32px)); }
+.scene-rehearsal-panel p { margin: 8px 0; line-height: 1.5; font-size: 12px; }
+.scene-rehearsal-panel button { padding: 7px 9px; border: 1px solid #ffffff24; border-radius: 7px; color: #e8e9e5; background: #ffffff08; cursor: pointer; font: inherit; font-size: 12px; }
+.scene-rehearsal-panel button:disabled { opacity: .4; cursor: default; }
+.rehearsal-actions { display: flex; flex-wrap: wrap; gap: 5px; }
+.rehearsal-stops { display: grid; gap: 4px; margin: 10px 0; }
+.rehearsal-stops button { text-align: left; }
+.rehearsal-stops button[aria-current=true] { border-color: #ddc795; background: #ddc79515; }
+.rehearsal-stops button[data-state=COMPLETE] { color: #94c6ae; }
+.rehearsal-stops button[data-state=PLAYING] { background: #ddc79530; }
+.scene-rehearsal-panel .rehearsal-note { font-size: 10px; color: #afb5b7; }
