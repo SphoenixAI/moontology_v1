@@ -1,3 +1,4 @@
+import { LUNAR_TASK_PROFILES } from './lunarTaskProfiles';
 import type {
   DerivedIntelligence,
   EvidenceComparison,
@@ -77,6 +78,45 @@ export class OntologyStore {
       this.selectedEntityId = id;
       this.mission.phase = `SCENE REHEARSAL · ${action}`;
     }
+    this.commit();
+  }
+
+  setBackgroundMotion(id: string, state: string): void {
+    const object = this.objects.get(id); if (!object) return;
+    if (object.properties.backgroundMotionState === state) return;
+    object.properties.backgroundMotionState = state;
+    this.commit();
+  }
+  canAnimateBackground(id: string): boolean {
+    const properties = this.objects.get(id)?.properties;
+    return !!properties && ['STAGED', 'ACTIVE'].includes(properties.status) &&
+      (!properties.health || properties.health === 'NOMINAL');
+  }
+
+  /** Read the same evidence as the main UI, without changing its selection. */
+  getProximityBrief(id: string) {
+    const object = this.objects.get(id), profile = LUNAR_TASK_PROFILES[id];
+    if (!object || !profile) return null;
+    const analysis = this.buildAnalysis(id);
+    const related = new Set([id, object.properties.currentTask, ...analysis.intelligence.downstreamImpact.map(i=>i.objectId)]);
+    const issues = [...this.objects.values()].filter(o=>o.type==='Alert' && o.properties.status==='OPEN' && related.has(o.properties.subjectId));
+    const task = object.properties.currentTask ? this.objects.get(object.properties.currentTask) : null;
+    return { id, task: task?.label ?? profile.title,
+      hardware: issues.length ? `${issues.length} open · ${issues[0].description ?? issues[0].label}` : `Unverified · ${profile.hardwareCheck}`,
+      reasoning: analysis.evidence.result === 'DISCREPANCY' ? 'Report ≠ observation → inspect locally'
+        : analysis.evidence.result === 'ALIGNED' ? 'Evidence agrees → continue task'
+        : analysis.intelligence.verificationRequired ? 'Verification requested → await Go2 evidence' : profile.reasoning,
+      evidence: analysis.evidence.observed.state === 'NOT OBSERVED' ? 'Scene cue · physical evidence pending'
+        : `${analysis.evidence.observed.source} · ${analysis.evidence.observed.state}`,
+      result: issues.length ? 'DISCREPANCY' : analysis.evidence.result,
+    };
+  }
+
+  setDemoMissionState(id: string, state: string, phase: string, source: string): void {
+    const object = this.objects.get(id); if (!object) return;
+    if (object.properties.demoMissionState === state && this.mission.phase === `EXCAVATOR · ${phase}`) return;
+    object.properties.demoMissionState = state; object.properties.demoMissionSource = source;
+    object.properties.status = state; this.mission.phase = `EXCAVATOR · ${phase}`;
     this.commit();
   }
 

@@ -1,7 +1,11 @@
+import { ASSET_STANDOFF_RADII, REGION_STANDOFF_RADII, approachPlan, planStandoffDetailed, regionCentroid } from './relay/approach';
+import { connectLiveMapRelay } from './relay/LiveMapRelay';
 import { SceneGrounding } from './world/SceneGrounding';
 import type { LayoutRehearsal } from './debug/LayoutRehearsal';
 import type { DemoRouteRehearsal } from './debug/DemoRouteRehearsal';
 import './style.css';
+import { BackgroundTraffic } from './vehicles/BackgroundTraffic';
+import { HumanoidProximityOverlay } from './ui/HumanoidProximityOverlay';
 import type { AirlockRehearsal } from './debug/AirlockRehearsal';
 import { SceneRehearsalPanel } from './ui/SceneRehearsalPanel';
 import './ui/glass.css';
@@ -81,6 +85,8 @@ declare global {
     moontologyScene: StaticSceneRuntimeApi;
     moontologyGo2?: Go2BridgeRuntimeApi;
     moontologyEnterScene2?: () => void;
+    /** Dev-only: rendered-rig vs authoritative-pose diagnostics for gait/smoothing verification. */
+    moontologyGo2Visual?: () => { lag: number; root: number[]; rig: number[]; yaw: number; follow: string; gait: Record<string, unknown> } | null;
   }
 }
 
@@ -259,11 +265,77 @@ let rehearsalPanel: SceneRehearsalPanel | null = null;
 let disposed = false;
 let spatialSyncElapsed = 0;
 let sceneGrounding: SceneGrounding | null = null;
+let backgroundTraffic: BackgroundTraffic | null = null;
+let humanoidProximity: HumanoidProximityOverlay | null = null;
 let mapBlock: string | null = null;
 let physicalMapHold: string | null = null;
 const previousMapPosition = new Vector3();
 ontology.setLayoutProvider(() => world?.layout?.observation() ?? null);
 
+const frameMetrics = { frames: 0, last_frame_ms: 0, max_frame_ms: 0 };
+let previousFrameTime = 0;
+const liveMapRelay = import.meta.env.DEV ? connectLiveMapRelay({
+  registry, ontology,
+  performance: () => ({ ...frameMetrics, render_age_ms: previousFrameTime ? performance.now() - previousFrameTime : null, visible: document.visibilityState === 'visible' }),
+  planApproach: (targetId = 'EXC-01') => {
+    if (!world?.layout || !go2Agent) return null;
+    const start = go2Agent.agentRoot.getWorldPosition(new Vector3());
+    const asset = registry.get(targetId)?.root;
+    // The bridge needs to know whether the waypoint is the standoff goal or an intermediate
+    // grid node: only a goal within a fraction of one physical step counts as arrival.
+    const detail = (plan: ReturnType<typeof approachPlan>) => plan && { x: plan.waypoint.x, y: plan.waypoint.y, z: plan.waypoint.z, kind: plan.kind, radius: plan.radius };
+    if (asset) {
+      const target = asset.getWorldPosition(new Vector3());
+      if (targetId === 'EXC-01') return detail(approachPlan(world.layout, start, target));
+      // Other assets: nearest standoff with a straight clear lane; footprints differ per asset.
+      return detail(planStandoffDetailed(world.layout, start, target, ASSET_STANDOFF_RADII, 2));
+    }
+    // Layout regions (buildings, walkways, doorways) are targets too: aim at the centroid.
+    const region = world.layout.observation().regions.find(r => r.id === targetId);
+    if (!region) return null;
+    return detail(planStandoffDetailed(world.layout, start, regionCentroid(region.polygon, start.y), REGION_STANDOFF_RADII, 3));
+  },
+  resetDemo: () => {
+    // Name the guard so an operator/agent can act on it instead of guessing.
+    if (activeCalibration.id !== 'SCENE_1') return `scene_is_${activeCalibration.id}`;
+    if (!go2Agent) return 'robot_model_still_loading';
+    if (!world?.layout) return 'layout_not_loaded';
+    if (physicalMapHold) return `physical_hold: ${physicalMapHold}`;
+    if (go2TelemetryClient?.isDriving()) return 'legacy_telemetry_driving';
+    applyRobotSpawn(go2Agent.agentRoot, SCENE_1_CALIBRATION);
+    const support = world.layout.sample(go2Agent.agentRoot.position.x, go2Agent.agentRoot.position.z);
+    if (support.height !== null) go2Agent.agentRoot.position.y = support.height;
+    go2Agent.acknowledgeAgentRootSnap(); rehearsalPanel?.director.reset();
+    // A rehearsal that reached the doorway left the facade door open ('opening'); re-arm it so the
+    // next run can reach the airlock again.
+    airlockTransition?.resetScene1();
+    frameMetrics.frames = 0; frameMetrics.max_frame_ms = 0;
+    return null;
+  },
+  robot: () => go2Agent?.agentRoot ?? null,
+  world: () => ({
+    // World phase, not the raw door state: the facade door opening ('opening') is still Scene 1, so
+    // a Go2 parked at the doorway standoff keeps a stable identity and a ready map.
+    identity: `${activeCalibration.id}:${world?.activeMode ?? 'loading'}:${airlockTransition?.getWorldPhase() ?? 'initial'}`,
+    ready: !!world?.layout && !!go2Agent && !world.fallbackReason && registry.size === level1.assets.length &&
+      (!airlockTransition || ['scene1', 'scene2'].includes(airlockTransition.getWorldPhase())),
+    hold: physicalMapHold,
+    metersToWorldUnits: activeCalibration.metersToWorldUnits,
+  }),
+  legacyTelemetryActive: () => !!go2TelemetryClient?.getState().bridgeConnected || !!go2TelemetryClient?.isDriving(),
+  applyPose: (position, yaw) => {
+    if (!go2Agent || !world?.layout) return 'map_not_ready';
+    const requested = new Vector3(position.x, position.y, position.z);
+    const result = world.layout.constrain(go2Agent.agentRoot.position, requested);
+    if (result.blocked) return `map_boundary: ${result.blocked}`;
+    go2Agent.agentRoot.position.copy(result.position);
+    go2Agent.agentRoot.rotation.y = yaw;
+    go2Agent.recordAuthoritativePose();
+    return null;
+  },
+  applyJoints: (angles) => go2Agent?.setTelemetryJoints(angles) ?? false,
+  jointSource: () => go2Agent?.gaitState.jointSource ?? null,
+}) : null;
 
 const worldPosition = new Vector3();
 
@@ -285,6 +357,11 @@ const unsubscribeOntologySelection = ontology.subscribe(
 );
 
 const renderLoopStarted = performanceGovernor.start((time) => {
+  if (previousFrameTime) {
+    frameMetrics.last_frame_ms = time - previousFrameTime;
+    frameMetrics.max_frame_ms = Math.max(frameMetrics.max_frame_ms, frameMetrics.last_frame_ms);
+  }
+  previousFrameTime = time; frameMetrics.frames++;
   timer.update(time);
   const deltaSeconds = Math.min(timer.getDelta(), 0.1);
 
@@ -293,13 +370,14 @@ const renderLoopStarted = performanceGovernor.start((time) => {
   staticAssetSystem.update(deltaSeconds);
   humanoidFleetPanel?.update();
   if (go2Agent) {
+    liveMapRelay?.state.tick();
     previousMapPosition.copy(go2Agent.agentRoot.position);
     go2Controller?.setExternalControlActive(
-      !!physicalMapHold || (go2TelemetryClient?.isDriving() ?? false) ||
+      !!physicalMapHold || !!liveMapRelay?.state.ownsPose() || (go2TelemetryClient?.isDriving() ?? false) ||
       airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading',
     );
     go2Controller?.update(deltaSeconds, go2Agent);
-    if (!physicalMapHold && airlockTransition?.getState() !== 'entering' && airlockTransition?.getState() !== 'loading') {
+    if (!physicalMapHold && !liveMapRelay?.state.ownsPose() && airlockTransition?.getState() !== 'entering' && airlockTransition?.getState() !== 'loading') {
       go2TelemetryClient?.update(go2Agent.agentRoot, deltaSeconds);
     }
     if (world?.layout) {
@@ -342,11 +420,14 @@ const renderLoopStarted = performanceGovernor.start((time) => {
   }
   rehearsalPanel?.update(timer.getDelta(), go2Agent?.agentRoot ?? null,
     activeCalibration.id !== SCENE_1_CALIBRATION.id ||
-      (airlockTransition && airlockTransition.getState() !== 'scene1')
+      (airlockTransition && airlockTransition.getWorldPhase() !== 'scene1')
       ? 'Scene 1 rehearsal stopped for scene transition.'
       : physicalMapHold ?? (sceneGrounding?.issues.size ? 'Placement blocked: ' + [...sceneGrounding.issues].map(([id, reason]) => `${id}: ${reason}`).join('; ') : null) ?? (!world?.layout ? 'Waiting for measured map boundaries.' : null) ?? (bridgeState?.telemetryActive && !bridgeState.robotConnected
         ? 'Robot telemetry lost. Resume after reconnection.'
         : null));
+  backgroundTraffic?.update(timer.getDelta(), go2Agent?.agentRoot ?? null,
+    activeCalibration.id === SCENE_1_CALIBRATION.id && (!airlockTransition || airlockTransition.getWorldPhase() === 'scene1') &&
+    !physicalMapHold && !liveMapRelay?.state.isMissionHeld());
   animations.update(deltaSeconds);
   if (activeCalibration.id === SCENE_1_CALIBRATION.id) sceneGrounding?.update();
   sceneEntityHighlighter.update();
@@ -378,6 +459,8 @@ const renderLoopStarted = performanceGovernor.start((time) => {
   }
   if (orbitControls.enabled) orbitControls.update();
   moonControlSystem?.update(deltaSeconds);
+  humanoidProximity?.update(go2Agent?.agentRoot ?? null, activeCalibration.id === SCENE_1_CALIBRATION.id &&
+    (!airlockTransition || airlockTransition.getWorldPhase() === 'scene1'));
   renderer.render(scene, camera);
 });
 
@@ -417,9 +500,12 @@ const disposeSceneResources = (): void => {
 
 const dispose = (): void => {
   disposed = true;
+  liveMapRelay?.dispose();
   assetLoader.dispose();
   unsubscribeOntologySelection();
   operationalOverlay.dispose();
+  backgroundTraffic?.dispose();
+  humanoidProximity?.dispose();
   rehearsalPanel?.dispose();
   demoRouteRehearsal?.dispose();
   airlockTransition?.dispose();
@@ -584,6 +670,10 @@ const bootstrap = async (): Promise<void> => {
   if (!startInScene2 && world?.layout) {
     sceneGrounding = new SceneGrounding(registry, world.layout);
     sceneGrounding.update();
+    backgroundTraffic = new BackgroundTraffic(registry, world.layout, ontology,
+      document.querySelector<HTMLElement>('.scene-rehearsal-panel .dock-panel__body') ?? undefined);
+    humanoidProximity = new HumanoidProximityOverlay(registry, ontology, camera);
+    sceneGrounding.update();
   }
   rehearsalPanel.setGroundSampler((x, z) => world?.layout?.sample(x, z, false).height ?? null);
   placementPanel?.setAssetCount(registry.size, level1.assets.length);
@@ -611,6 +701,11 @@ const bootstrap = async (): Promise<void> => {
     );
     go2TelemetryClient.attach(go2Agent.agentRoot);
     window.moontologyGo2 = go2TelemetryClient.api;
+    if (import.meta.env.DEV) {
+      const agent = go2Agent;
+      window.moontologyGo2Visual = () => ({ lag: agent.visualLag, root: agent.agentRoot.position.toArray(),
+        rig: agent.visualRig.position.toArray(), yaw: agent.visualRig.rotation.y, follow: agent.visualFollowSource, gait: { ...agent.gaitState } });
+    }
     moonControlSystem = new MoonControlSystem({
       host: debugHost,
       showUi: true,
@@ -622,7 +717,7 @@ const bootstrap = async (): Promise<void> => {
     });
 
     if (import.meta.env.DEV && launchQuery.has('layoutTest')) {
-      const { LayoutRehearsal } = await import('./debug/LayoutRehearsal');
+      const { LayoutRehearsal, describeTextures } = await import('./debug/LayoutRehearsal');
       layoutRehearsal = new LayoutRehearsal(go2Agent, camera, orbitControls,
         () => moonControlSystem?.setMode(ControlModes.CAMERA),
         () => moonControlSystem?.setMode(ControlModes.ROBOT),
@@ -632,15 +727,15 @@ const bootstrap = async (): Promise<void> => {
           robot: world?.layout?.observation().robotState,
           assets: registry.values().filter(a => a.config.src).map(a => ({ id: a.config.id,
             position: a.root.getWorldPosition(new Vector3()).toArray().map(n => Number(n.toFixed(3))),
-            surface: a.root.userData.surfaceRegion, contactY: a.root.userData.surfaceY, status: a.root.userData.layoutStatus })),
-          issues: [...sceneGrounding?.issues ?? []] }));
+            surface: a.root.userData.surfaceRegion, contactY: a.root.userData.surfaceY, status: a.root.userData.layoutStatus, textures: describeTextures(a.model) })),
+          issues: [...sceneGrounding?.issues ?? []], traffic: backgroundTraffic?.report() }));
     }
 
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('routeTest')) {
       const { DemoRouteRehearsal } = await import('./debug/DemoRouteRehearsal');
       if (!disposed) demoRouteRehearsal = new DemoRouteRehearsal(go2Agent, rehearsalPanel.director,
         () => !!go2TelemetryClient?.getState().robotConnected || !!go2TelemetryClient?.isDriving() ||
-          activeCalibration.id !== SCENE_1_CALIBRATION.id || !!airlockTransition && airlockTransition.getState() !== 'scene1');
+          activeCalibration.id !== SCENE_1_CALIBRATION.id || !!airlockTransition && airlockTransition.getWorldPhase() !== 'scene1');
     }
 
     if (developmentToolsEnabled) {
@@ -668,6 +763,7 @@ const bootstrap = async (): Promise<void> => {
       } else {
         go2RegistrationDebug?.detach();
       }
+      moonControlSystem?.setInteriorCamera(true);
       moonControlSystem?.recenterOnGo2();
     };
 
@@ -735,7 +831,7 @@ const bootstrap = async (): Promise<void> => {
         const { AirlockRehearsal } = await import('./debug/AirlockRehearsal');
         if (anchor && !disposed) airlockRehearsal = new AirlockRehearsal(
           anchor, go2Agent, camera, orbitControls, airlockTransition,
-          () => Boolean(go2TelemetryClient?.isDriving() || go2TelemetryClient?.getState().bridgeConnected));
+          () => Boolean(go2TelemetryClient?.isDriving() || go2TelemetryClient?.getState().bridgeConnected), staticAssetSystem?.api);
       }
     }
 

@@ -1,5 +1,6 @@
 import type { LevelConfig } from '../levels/types';
 import { SCENE_1_STOPS } from '../levels/scene1DemoRoute';
+import { LUNAR_TASK_PROFILES } from './lunarTaskProfiles';
 import type { OntologyObject, OntologyObjectType, OntologyPosition, OntologyRelation, OntologySeed } from './types';
 
 const point = (p: readonly number[]): OntologyPosition => ({ x: p[0], y: p[1], z: p[2] });
@@ -9,13 +10,14 @@ export const createLunarBaseOntologySeed = (level: LevelConfig): OntologySeed =>
   const objects: OntologyObject[] = [];
   const relations: OntologyRelation[] = [];
   for (const stop of SCENE_1_STOPS) {
+    const profile = LUNAR_TASK_PROFILES[stop.id];
     const actor = level.assets.find(asset => asset.id === stop.id)!;
-    objects.push({ id: stop.id, type: 'Humanoid', label: `${stop.id} · ${stop.title}`, description: stop.detail,
+    objects.push({ id: stop.id, type: 'Humanoid', label: `${stop.id} · ${profile.title}`, description: `${stop.detail} Research context: ${profile.title}. Hardware check: ${profile.hardwareCheck}. Scene cue, not physical evidence.`,
       capabilities: ['Inspectable', 'Taskable', 'MobileAsset'],
       properties: { status: 'STAGED', health: 'NOMINAL', position: point(actor.position), currentTask: stop.taskId,
-        role: stop.title, expectedState: stop.behavior, verificationStatus: 'NOT_REQUIRED',
+        role: profile.title, expectedState: stop.behavior, verificationStatus: 'NOT_REQUIRED',
         rehearsalAction: stop.title, rehearsalState: 'READY', skills: [stop.behavior] } });
-    objects.push({ id: stop.taskId, type: 'Task', label: stop.title, description: stop.detail, capabilities: [],
+    objects.push({ id: stop.taskId, type: 'Task', label: profile.title, description: stop.detail, capabilities: [],
       properties: { status: 'PLANNED', expectedState: stop.behavior, source: 'SCENE_PLAN' } });
     relations.push(relation(stop.id, 'assignedTo', stop.taskId), relation(stop.id, 'locatedAt', `Stop-${stop.id}`),
       relation(stop.taskId, 'dependsOn', stop.equipment), relation('GO2-01', 'observes', stop.id));
@@ -39,7 +41,7 @@ export const createLunarBaseOntologySeed = (level: LevelConfig): OntologySeed =>
     { id: 'CableDeployment-17', type: 'Task', label: 'Staged cable run', capabilities: [], properties: { status: 'PLANNED', expectedState: 'CONNECTOR_INSPECTED' } },
     { id: 'CableRun-17', type: 'CableRun', label: 'Cable inspection run', capabilities: ['Inspectable'], properties: { status: 'PARTIAL', position: point([-6.5, 0, -6.7]), role: 'Staged cable visual' } },
     { id: 'Habitat-2', type: 'Habitat', label: 'World 2 habitat', capabilities: ['Inspectable'], properties: { status: 'AVAILABLE', position: point([-5, -0.7, -20]), role: 'Museum entrance', footprint: { width: 12, depth: 8 } } },
-    { id: 'Route-Alpha', type: 'Route', label: 'Scene 1 demo route', capabilities: ['Inspectable'], properties: { status: 'OPEN', role: 'Inventory → sampling → cable → fatigue → assistance → habitat' } },
+    { id: 'Route-Alpha', type: 'Route', label: 'Scene 1 demo route', capabilities: ['Inspectable'], properties: { status: 'OPEN', role: 'Inventory → sampling → cable → thermal → recovery → habitat' } },
   );
   relations.push(relation('GO2-01', 'routesThrough', 'Route-Alpha'), relation('CableRun-17', 'dependsOn', 'CableDeployment-17'),
     relation('PowerNode-B', 'supplies', 'Habitat-2'), relation('Airlock-2A', 'dependsOn', 'Habitat-2'));

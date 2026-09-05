@@ -91,8 +91,11 @@ export interface OntologyProperties {
   placementStatus?: string;
   boundary?: readonly (readonly number[])[];
   validActions?: readonly string[];
+  demoMissionState?: string;
+  demoMissionSource?: string;
   rehearsalState?: string;
   rehearsalAction?: string;
+  backgroundMotionState?: string;
 }
 
 export interface OntologyObject<
