@@ -23,6 +23,32 @@ import {
 import { loadOfficialGo2 } from './loadOfficialGo2';
 
 const UP = new Vector3(0, 1, 0);
+/**
+ * The rendered rig follows AgentRoot through a critically damped spring instead
+ * of snapping. Physical telemetry arrives in discrete samples (about 10 Hz);
+ * without this the avatar juts forward once per sample and the gait sees a
+ * velocity spike followed by zeros, which reads as sliding legs. A second-order
+ * follower keeps the rig's velocity continuous (a first-order lerp still jumps
+ * its velocity at every sample). Steady-state lag behind a pose moving at v is
+ * 2v/VISUAL_FOLLOW_OMEGA; the rig never runs ahead of a measured pose, and
+ * observations/collision keep using AgentRoot.
+ */
+export const VISUAL_FOLLOW_OMEGA = 12; // rad/s, ~1.9 Hz, for sampled telemetry gaps
+const VISUAL_FOLLOW_OMEGA_CONTINUOUS = 28; // per-frame (keyboard/rehearsal) motion: tight follow
+const VISUAL_SUBSTEP_SECONDS = 1 / 120;
+/**
+ * Sampled telemetry is rendered one sample interval behind and linearly
+ * interpolated between the two bracketing samples (render-behind, as network
+ * games do): constant velocity between updates, no extrapolation past the
+ * newest measured pose. Falls back to the spring when samples stop.
+ */
+export const TELEMETRY_INTERPOLATION_MIN_DELAY_MS = 60;
+export const TELEMETRY_INTERPOLATION_MAX_AGE_MS = 450;
+const TELEMETRY_SAMPLE_HISTORY = 6;
+interface PoseSample { t: number; x: number; y: number; z: number; yaw: number }
+/** Larger jumps are teleports (spawn, reset, scene load): snap instead of glide. */
+export const VISUAL_SNAP_DISTANCE = 2.5;
+export const VISUAL_SNAP_YAW = 1.2;
 const GO2_TARGET_LENGTH_METERS = 0.7;
 const GO2_TARGET_WIDTH_METERS = 0.31;
 const GO2_TARGET_HEIGHT_METERS = 0.4;
@@ -49,6 +75,13 @@ export class Go2Agent implements Go2MotionTarget {
   private readonly previousPosition = new Vector3();
   private readonly frameDisplacement = new Vector3();
   private readonly visualContactBounds = new Box3();
+  /** Smoothed presentation pose (world frame of AgentRoot's parent). */
+  private readonly visualPosition = new Vector3();
+  private readonly visualVelocity = new Vector3();
+  private visualYaw: number;
+  private visualYawRate = 0;
+  private readonly poseSamples: PoseSample[] = [];
+  private visualSource: 'interpolated' | 'spring' | 'snap' = 'snap';
   private visualYOffset = 0;
   private motionResolver: ((from: Vector3, requested: Vector3) => Vector3) | null = null;
   private previousYaw: number;
@@ -70,6 +103,8 @@ export class Go2Agent implements Go2MotionTarget {
     this.agentRoot.userData.authoritativeGameTransform = true;
     this.agentRoot.position.fromArray(config.position);
     this.agentRoot.rotation.y = config.yaw;
+    this.visualPosition.copy(this.agentRoot.position);
+    this.visualYaw = config.yaw;
 
     this.visualRig.name = 'VisualRig';
     this.visualRig.userData.visualOnly = true;
@@ -108,8 +143,8 @@ export class Go2Agent implements Go2MotionTarget {
     this.object.add(this.agentRoot, this.visualRig);
     this.syncVisualFromAgentRoot();
     this.calibrateVisualRigToRealDimensions();
-    this.previousPosition.copy(this.agentRoot.position);
-    this.previousYaw = this.agentRoot.rotation.y;
+    this.previousPosition.copy(this.visualPosition);
+    this.previousYaw = this.visualYaw;
 
     logGo2LegJoints(this.legJoints);
   }
@@ -139,21 +174,109 @@ export class Go2Agent implements Go2MotionTarget {
     this.agentRoot.rotation.y += angleRadians;
   }
 
-  updateVisualFromAgentRoot(deltaSeconds: number): void {
+  /**
+   * Record that AgentRoot was just set from a sampled telemetry pose. Call right
+   * after the authoritative pose changes; enables render-behind interpolation.
+   */
+  recordAuthoritativePose(nowMs = performance.now()): void {
+    const last = this.poseSamples[this.poseSamples.length - 1];
+    if (last && nowMs - last.t < 1) return;
+    this.poseSamples.push({ t: nowMs, x: this.agentRoot.position.x, y: this.agentRoot.position.y,
+      z: this.agentRoot.position.z, yaw: this.agentRoot.rotation.y });
+    if (this.poseSamples.length > TELEMETRY_SAMPLE_HISTORY) this.poseSamples.shift();
+  }
+
+  /** How the rig is currently being positioned (diagnostics). */
+  get visualFollowSource(): 'interpolated' | 'spring' | 'snap' {
+    return this.visualSource;
+  }
+
+  private interpolateTelemetry(nowMs: number): boolean {
+    const samples = this.poseSamples;
+    if (samples.length < 2) return false;
+    const newest = samples[samples.length - 1];
+    if (nowMs - newest.t > TELEMETRY_INTERPOLATION_MAX_AGE_MS) return false;
+    // Render one typical interval behind the newest sample.
+    let interval = 0;
+    for (let i = 1; i < samples.length; i++) interval += samples[i].t - samples[i - 1].t;
+    interval /= samples.length - 1;
+    const renderTime = nowMs - Math.max(TELEMETRY_INTERPOLATION_MIN_DELAY_MS, interval * 1.1);
+    let a = samples[0], b = samples[1];
+    for (let i = 1; i < samples.length; i++) {
+      a = samples[i - 1]; b = samples[i];
+      if (renderTime <= b.t) break;
+    }
+    const span = b.t - a.t;
+    const u = renderTime >= b.t ? 1 : renderTime <= a.t ? 0 : (renderTime - a.t) / span;
+    const previousX = this.visualPosition.x, previousZ = this.visualPosition.z;
+    this.visualPosition.set(a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, a.z + (b.z - a.z) * u);
+    const yawDelta = Math.atan2(Math.sin(b.yaw - a.yaw), Math.cos(b.yaw - a.yaw));
+    this.visualYaw = a.yaw + yawDelta * u;
+    // Keep the spring's state consistent for a seamless hand-back later.
+    const step = Math.hypot(this.visualPosition.x - previousX, this.visualPosition.z - previousZ);
+    if (span > 0) this.visualVelocity.set((b.x - a.x) / (span / 1000), 0, (b.z - a.z) / (span / 1000));
+    if (step === 0 && u >= 1) this.visualVelocity.set(0, 0, 0);
+    this.visualYawRate = span > 0 ? yawDelta / (span / 1000) : 0;
+    return true;
+  }
+
+  updateVisualFromAgentRoot(deltaSeconds: number, nowMs = performance.now()): void {
+    // Glide the presentation pose toward the authoritative pose.
+    const gap = this.agentRoot.position.distanceTo(this.visualPosition);
+    const yawGap = Math.atan2(
+      Math.sin(this.agentRoot.rotation.y - this.visualYaw),
+      Math.cos(this.agentRoot.rotation.y - this.visualYaw),
+    );
+    if (gap > VISUAL_SNAP_DISTANCE || Math.abs(yawGap) > VISUAL_SNAP_YAW || deltaSeconds <= 0) {
+      this.visualPosition.copy(this.agentRoot.position);
+      this.visualVelocity.set(0, 0, 0);
+      this.visualYaw = this.agentRoot.rotation.y;
+      this.visualYawRate = 0;
+      this.poseSamples.length = 0;
+      this.visualSource = 'snap';
+    } else if (this.interpolateTelemetry(nowMs)) {
+      this.visualSource = 'interpolated';
+    } else {
+      this.visualSource = 'spring';
+      // Critically damped spring, semi-implicit Euler in fixed substeps so long
+      // frames stay stable: a'' = w^2 (target - x) - 2 w x'.
+      let remaining = Math.min(deltaSeconds, 0.25);
+      const recentSample = this.poseSamples.length > 0 &&
+        nowMs - this.poseSamples[this.poseSamples.length - 1].t < 2 * TELEMETRY_INTERPOLATION_MAX_AGE_MS;
+      const w = recentSample ? VISUAL_FOLLOW_OMEGA : VISUAL_FOLLOW_OMEGA_CONTINUOUS;
+      while (remaining > 0) {
+        const h = Math.min(VISUAL_SUBSTEP_SECONDS, remaining);
+        remaining -= h;
+        const ax = w * w * (this.agentRoot.position.x - this.visualPosition.x) - 2 * w * this.visualVelocity.x;
+        const ay = w * w * (this.agentRoot.position.y - this.visualPosition.y) - 2 * w * this.visualVelocity.y;
+        const az = w * w * (this.agentRoot.position.z - this.visualPosition.z) - 2 * w * this.visualVelocity.z;
+        this.visualVelocity.x += ax * h; this.visualVelocity.y += ay * h; this.visualVelocity.z += az * h;
+        this.visualPosition.addScaledVector(this.visualVelocity, h);
+        const yawError = Math.atan2(Math.sin(this.agentRoot.rotation.y - this.visualYaw), Math.cos(this.agentRoot.rotation.y - this.visualYaw));
+        this.visualYawRate += (w * w * yawError - 2 * w * this.visualYawRate) * h;
+        this.visualYaw += this.visualYawRate * h;
+      }
+      // Settle exactly instead of asymptotically.
+      if (this.agentRoot.position.distanceTo(this.visualPosition) < 1e-4 && this.visualVelocity.lengthSq() < 1e-6) {
+        this.visualPosition.copy(this.agentRoot.position); this.visualVelocity.set(0, 0, 0);
+      }
+    }
+
+    // Gait drive = motion of the rendered rig itself, so it is continuous.
     this.frameDisplacement
-      .copy(this.agentRoot.position)
+      .copy(this.visualPosition)
       .sub(this.previousPosition);
     this.forward
       .set(1, 0, 0)
-      .applyAxisAngle(UP, this.agentRoot.rotation.y);
+      .applyAxisAngle(UP, this.visualYaw);
 
     const forwardVelocity =
       deltaSeconds > 0
         ? this.frameDisplacement.dot(this.forward) / deltaSeconds
         : 0;
     const yawDelta = Math.atan2(
-      Math.sin(this.agentRoot.rotation.y - this.previousYaw),
-      Math.cos(this.agentRoot.rotation.y - this.previousYaw),
+      Math.sin(this.visualYaw - this.previousYaw),
+      Math.cos(this.visualYaw - this.previousYaw),
     );
     const angularVelocity =
       deltaSeconds > 0 ? yawDelta / deltaSeconds : 0;
@@ -173,8 +296,8 @@ export class Go2Agent implements Go2MotionTarget {
     const parentScaleY = this.object.getWorldScale(this.forward).y;
     if (penetration > 0 && parentScaleY > 0) this.visualRig.position.y += penetration / parentScaleY;
 
-    this.previousPosition.copy(this.agentRoot.position);
-    this.previousYaw = this.agentRoot.rotation.y;
+    this.previousPosition.copy(this.visualPosition);
+    this.previousYaw = this.visualYaw;
   }
 
   get gaitState(): Readonly<Go2GaitDebugState> {
@@ -185,18 +308,38 @@ export class Go2Agent implements Go2MotionTarget {
     this.gaitAnimator.setMotionMode(mode);
   }
 
+  /**
+   * Measured joint angles from the robot's LowState (12 radians, Unitree motor
+   * order). Returns false and keeps the procedural gait if the payload is invalid.
+   */
+  setTelemetryJoints(angles: ArrayLike<number>, receivedMs = performance.now()): boolean {
+    return this.gaitAnimator.setTelemetryJoints(angles, receivedMs);
+  }
+
+  /** Metres the rendered rig currently trails the authoritative pose. */
+  get visualLag(): number {
+    return this.agentRoot.position.distanceTo(this.visualPosition);
+  }
+
   syncVisualFromAgentRoot(): void {
-    this.visualRig.position.copy(this.agentRoot.position);
+    this.visualRig.position.copy(this.visualPosition);
     this.visualRig.position.y += this.visualYOffset;
-    this.visualRig.rotation.set(0, this.agentRoot.rotation.y, 0);
+    this.visualRig.rotation.set(0, this.visualYaw, 0);
   }
 
   /**
    * Keep gait integration from treating a scene teleport as one huge step.
    */
   acknowledgeAgentRootSnap(): void {
-    this.previousPosition.copy(this.agentRoot.position);
-    this.previousYaw = this.agentRoot.rotation.y;
+    this.visualPosition.copy(this.agentRoot.position);
+    this.visualVelocity.set(0, 0, 0);
+    this.visualYaw = this.agentRoot.rotation.y;
+    this.visualYawRate = 0;
+    this.poseSamples.length = 0;
+    this.visualSource = 'snap';
+    this.previousPosition.copy(this.visualPosition);
+    this.previousYaw = this.visualYaw;
+    this.gaitAnimator.restoreRestPose();
     this.syncVisualFromAgentRoot();
   }
 
