@@ -1,3 +1,4 @@
+import { SCENE_1_LAYOUT } from './sceneLayouts';
 import { SCENE_1_STOPS, SCENE_1_ROUTE_SPAWN } from './scene1DemoRoute';
 import type {
   LevelConfig,
@@ -35,6 +36,7 @@ export const HUMANOID_FLEET_SCALE = 1;
 export const level1: LevelConfig = {
   id: 'level-1',
   world: {
+    layout: SCENE_1_LAYOUT,
     mode: worldMode,
     visualSrc:
       '/worldlabs/lunar-base/Moon%20Base%20with%20Habitats.spz',

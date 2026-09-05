@@ -1,0 +1,44 @@
+import { Vector3, type PerspectiveCamera } from 'three';
+import type { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import type { Go2Agent } from '../go2/Go2Agent';
+
+/** Development-only survey of the rendered map. All staging is virtual. */
+export class LayoutRehearsal {
+  private readonly panel = document.createElement('div');
+  private readonly status = document.createElement('p');
+  private readonly report = document.createElement('pre');
+  private readonly reportSource: () => unknown;
+  private reportAt = 0;
+  private readonly actor: Go2Agent;
+  constructor(actor: Go2Agent, camera: PerspectiveCamera, orbit: OrbitControls,
+    freeCamera: () => void, followCamera: () => void, blocked: () => boolean, canPlace: (x: number, z: number) => boolean, reportSource: () => unknown) {
+    this.actor = actor; this.reportSource = reportSource;
+    this.panel.setAttribute('aria-label', 'Layout survey');
+    Object.assign(this.panel.style, { position: 'fixed', left: '130px', top: '16px', zIndex: '100',
+      background: '#152029', color: 'white', padding: '12px', width: '235px', borderRadius: '12px' });
+    const title = document.createElement('p'); title.textContent = 'Map survey · virtual staging';
+    const overhead = document.createElement('button'); overhead.textContent = 'Overhead survey';
+    overhead.onclick = () => { freeCamera(); camera.up.set(0, 1, 0); camera.position.set(0, 29, -5.999);
+      orbit.target.set(0, 0, -6); camera.lookAt(orbit.target); orbit.enabled = false; };
+    const fields = ['X', 'Z', 'Yaw'].map((axis, i) => {
+      const field = document.createElement('input'); field.type = 'number'; field.step = '0.1';
+      field.value = String([1.5, 5, 0.65][i]); field.style.width = '65px'; field.setAttribute('aria-label', `Survey ${axis}`); return field;
+    });
+    const stage = document.createElement('button'); stage.textContent = 'Stage virtual Go2';
+    stage.onclick = () => { if (blocked()) return;
+      const [x, z, yaw] = fields.map(field => Number(field.value));
+      if (![x, z, yaw].every(Number.isFinite) || !canPlace(x!, z!)) return;
+      actor.agentRoot.position.set(x!, 0, z!); actor.agentRoot.rotation.y = yaw!;
+      actor.acknowledgeAgentRootSnap(); camera.up.set(0, 1, 0); followCamera(); };
+    const details = document.createElement('details'), summary = document.createElement('summary');
+    summary.textContent = 'Scene layout report'; this.report.style.cssText = 'max-height:250px;overflow:auto;font-size:10px;white-space:pre-wrap';
+    details.append(summary, this.report);
+    this.panel.append(title, overhead, ...fields, stage, this.status, details); document.body.append(this.panel);
+  }
+  update(): void {
+    if (performance.now() - this.reportAt > 500) { this.reportAt = performance.now(); this.report.textContent = JSON.stringify(this.reportSource(), null, 2); }
+    const p = this.actor.agentRoot.getWorldPosition(new Vector3());
+    this.status.textContent = `Go2 ${p.x.toFixed(2)}, ${p.y.toFixed(2)}, ${p.z.toFixed(2)}`;
+  }
+  dispose(): void { this.panel.remove(); }
+}

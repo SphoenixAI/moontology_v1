@@ -1,3 +1,4 @@
+import { SCENE_2_LAYOUT } from './sceneLayouts';
 import { APPROACH_LOCAL, THRESHOLD_LOCAL, APPROACH_WORLD, THRESHOLD_WORLD } from './airlockPlacement';
 import {
   SCENE_2_CALIBRATION,
@@ -18,6 +19,7 @@ const worldMode = import.meta.env.VITE_WORLD_MODE === 'placeholder'
  * Tune SCENE_2_CALIBRATION — not the Spark loader — to register the Go2.
  */
 export const SCENE_2_WORLD: WorldConfig = {
+  layout: SCENE_2_LAYOUT,
   mode: worldMode,
   visualSrc:
     '/worldlabs/scene-2/Futuristic%20Museum%20Interiors.spz',

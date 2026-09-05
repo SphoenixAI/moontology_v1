@@ -49,6 +49,7 @@ export class Go2Agent implements Go2MotionTarget {
   private readonly previousPosition = new Vector3();
   private readonly frameDisplacement = new Vector3();
   private visualYOffset = 0;
+  private motionResolver: ((from: Vector3, requested: Vector3) => Vector3) | null = null;
   private previousYaw: number;
 
   private constructor(
@@ -120,14 +121,17 @@ export class Go2Agent implements Go2MotionTarget {
     return new Go2Agent(config, robot, visualMeshCount);
   }
 
+  setMotionResolver(resolver: ((from: Vector3, requested: Vector3) => Vector3) | null): void {
+    this.motionResolver = resolver;
+  }
+
   moveForward(distanceMeters: number): void {
     this.forward
       .set(1, 0, 0)
       .applyAxisAngle(UP, this.agentRoot.rotation.y);
-    this.agentRoot.position.addScaledVector(
-      this.forward,
-      distanceMeters,
-    );
+    const requested = this.agentRoot.position.clone().addScaledVector(this.forward, distanceMeters);
+    this.agentRoot.position.copy(this.motionResolver
+      ? this.motionResolver(this.agentRoot.position, requested) : requested);
   }
 
   rotateYaw(angleRadians: number): void {

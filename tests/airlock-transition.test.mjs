@@ -55,7 +55,7 @@ test('approach opens once; threshold loads once and spawns after fade', async ()
   controller.dispose();
 });
 test('missing door animation never blocks world progression', async () => {
-  const { controller, counts } = fixture('door-failure'); controller.enterScene2();
+  const { controller, counts, robot } = fixture('door-failure'); robot.position.set(doorX, -.72, doorZ); controller.enterScene2();
   await wait(1600); assert.equal(counts.load, 1); assert.equal(controller.getState(), 'scene2'); controller.dispose();
 });
 test('failed World Labs visual preserves exterior and requires exit before retry', async () => {
@@ -65,5 +65,10 @@ test('failed World Labs visual preserves exterior and requires exit before retry
   robot.position.z = doorZ + 4; controller.update(); assert.equal(controller.getState(), 'scene1'); controller.dispose();
 });
 test('disposal cancels delayed transition', async () => {
-  const { controller, counts } = fixture(); controller.enterScene2(); controller.dispose(); await wait(450); assert.equal(counts.load, 0);
+  const { controller, counts, robot } = fixture(); robot.position.set(doorX, -.72, doorZ); controller.enterScene2(); controller.dispose(); await wait(450); assert.equal(counts.load, 0);
+});
+
+test('external entry requests cannot bypass the doorway', () => {
+  const { controller, counts } = fixture(); controller.enterScene2();
+  assert.equal(controller.getState(), 'scene1'); assert.equal(counts.load, 0); controller.dispose();
 });

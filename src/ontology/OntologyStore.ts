@@ -38,6 +38,8 @@ export class OntologyStore {
   private selectedEntityId: string;
   private revision = 0;
   private sequence = 19;
+  private layoutRegionIds = new Set<string>();
+  private layoutProvider: (() => OntologySnapshot['layout']) | null = null;
 
   constructor(seed: OntologySeed) {
     this.mission = seed.mission;
@@ -86,9 +88,42 @@ export class OntologyStore {
     };
   }
 
+  setLayoutProvider(provider: () => OntologySnapshot['layout']): void {
+    this.layoutProvider = provider;
+    this.commit();
+  }
+
+  syncLayoutRegions(): void {
+    const layout = this.layoutProvider?.();
+    const live = new Set<string>(); let changed = false;
+    for (const region of layout?.regions ?? []) {
+      live.add(region.id);
+      const xs = region.polygon.map(p => p[0]), zs = region.polygon.map(p => p[1]);
+      const properties = { status: region.kind === 'building' ? 'NO_ENTRY' : 'MAPPED',
+        position: { x: (Math.min(...xs)+Math.max(...xs))/2, y: region.floorY ?? 0, z: (Math.min(...zs)+Math.max(...zs))/2 },
+        footprint: { width: Math.max(...xs)-Math.min(...xs), depth: Math.max(...zs)-Math.min(...zs) },
+        role: region.kind, source: 'PRESENTATION_MAP_AUTHORED_LAYOUT', boundary: region.polygon, validActions: region.validActions };
+      if (JSON.stringify(this.objects.get(region.id)?.properties) !== JSON.stringify(properties)) {
+        this.objects.set(region.id, { id: region.id, type: region.kind === 'building' ? 'Habitat' : region.kind === 'walkway' ? 'Route' : 'WorkZone',
+          label: region.label, capabilities: ['Inspectable'], properties }); changed = true;
+      }
+    }
+    for (const id of this.layoutRegionIds) if (!live.has(id)) { this.objects.delete(id); changed = true; }
+    if (this.layoutRegionIds.has(this.selectedEntityId) && !live.has(this.selectedEntityId)) this.selectedEntityId = 'GO2-01';
+    this.layoutRegionIds = live;
+    if (changed) this.commit();
+  }
+
+  updateSurface(id: string, region: string, status: string): void {
+    const object = this.objects.get(id);
+    if (!object || object.properties.surfaceRegion === region && object.properties.placementStatus === status) return;
+    object.properties.surfaceRegion = region; object.properties.placementStatus = status; this.commit();
+  }
+
   getSnapshot(): OntologySnapshot {
     const objects = [...this.objects.values()];
     return {
+      layout: this.layoutProvider?.() ?? null,
       revision: this.revision,
       mission: this.mission,
       objects,

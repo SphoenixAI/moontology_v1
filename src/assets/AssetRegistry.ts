@@ -32,6 +32,15 @@ export class AssetRegistry {
     });
   }
 
+  /** Removal is reflected by the existing live registry consumers on the next frame. */
+  unregister(id: string): LoadedAsset | undefined {
+    const asset = this.assets.get(id);
+    if (!asset) return undefined;
+    asset.root.traverse(child => this.childToRoot.delete(child));
+    asset.root.removeFromParent(); this.assets.delete(id);
+    return asset;
+  }
+
   get(id: string): LoadedAsset | undefined {
     return this.assets.get(id);
   }

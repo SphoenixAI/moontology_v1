@@ -1,3 +1,5 @@
+import { SceneGrounding } from './world/SceneGrounding';
+import type { LayoutRehearsal } from './debug/LayoutRehearsal';
 import type { DemoRouteRehearsal } from './debug/DemoRouteRehearsal';
 import './style.css';
 import type { AirlockRehearsal } from './debug/AirlockRehearsal';
@@ -26,7 +28,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { AnimationSystem } from './animation/AnimationSystem';
 import { AssetLoader, type AssetLoadEvent } from './assets/AssetLoader';
 import { AssetRegistry } from './assets/AssetRegistry';
-import { MOONTOLOGY_CONFIG } from './config/moontologyConfig';
+import { ControlModes, MOONTOLOGY_CONFIG } from './config/moontologyConfig';
 import { MoonControlSystem } from './controls/MoonControlSystem';
 import { HumanoidFleetPanel } from './debug/HumanoidFleetPanel';
 import { PlacementController } from './debug/PlacementController';
@@ -250,11 +252,18 @@ let activeCalibration: SceneRobotCalibration = startInScene2
   ? SCENE_2_CALIBRATION
   : SCENE_1_CALIBRATION;
 let moonControlSystem: MoonControlSystem | null = null;
+let layoutRehearsal: LayoutRehearsal | null = null;
 let airlockRehearsal: AirlockRehearsal | null = null;
 let demoRouteRehearsal: DemoRouteRehearsal | null = null;
 let rehearsalPanel: SceneRehearsalPanel | null = null;
 let disposed = false;
 let spatialSyncElapsed = 0;
+let sceneGrounding: SceneGrounding | null = null;
+let mapBlock: string | null = null;
+let physicalMapHold: string | null = null;
+const previousMapPosition = new Vector3();
+ontology.setLayoutProvider(() => world?.layout?.observation() ?? null);
+
 
 const worldPosition = new Vector3();
 
@@ -279,40 +288,77 @@ const renderLoopStarted = performanceGovernor.start((time) => {
   timer.update(time);
   const deltaSeconds = Math.min(timer.getDelta(), 0.1);
 
+  layoutRehearsal?.update();
   airlockRehearsal?.update(deltaSeconds);
-  airlockTransition?.update();
   staticAssetSystem.update(deltaSeconds);
   humanoidFleetPanel?.update();
   if (go2Agent) {
+    previousMapPosition.copy(go2Agent.agentRoot.position);
     go2Controller?.setExternalControlActive(
-      (go2TelemetryClient?.isDriving() ?? false) ||
+      !!physicalMapHold || (go2TelemetryClient?.isDriving() ?? false) ||
       airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading',
     );
     go2Controller?.update(deltaSeconds, go2Agent);
-    if (airlockTransition?.getState() !== 'entering' && airlockTransition?.getState() !== 'loading') {
+    if (!physicalMapHold && airlockTransition?.getState() !== 'entering' && airlockTransition?.getState() !== 'loading') {
       go2TelemetryClient?.update(go2Agent.agentRoot, deltaSeconds);
     }
+    if (world?.layout) {
+      const requested = go2Agent.agentRoot.position.clone();
+      const result = world.layout.constrain(previousMapPosition, requested);
+      go2Agent.agentRoot.position.copy(result.position);
+      const support = world.layout.sample(result.position.x, result.position.z);
+      go2Agent.agentRoot.userData.surfaceRegion = support.regionId;
+      mapBlock = result.blocked ?? mapBlock;
+      if (result.blocked && go2TelemetryClient?.isDriving() && !physicalMapHold) {
+        physicalMapHold = `Map/telemetry mismatch: ${result.blocked}. Mission held; revalidate physical alignment.`;
+        go2Agent.agentRoot.userData.rejectedTelemetryPose = requested.toArray();
+        go2TelemetryClient.api.stop();
+      }
+    } else if (world?.requestedMode === 'marble') {
+      go2Agent.agentRoot.position.copy(previousMapPosition);
+      mapBlock = 'Map boundaries unavailable. Movement held.';
+      if (!physicalMapHold && go2TelemetryClient?.getState().telemetryActive) {
+        physicalMapHold = mapBlock;
+        go2TelemetryClient.api.stop();
+      }
+    }
+    world?.layout?.setRobotState({ position: go2Agent.agentRoot.position.toArray(),
+      regionId: go2Agent.agentRoot.userData.surfaceRegion ?? null, blocked: mapBlock, physicalHold: physicalMapHold,
+      rejectedTelemetryPose: go2Agent.agentRoot.userData.rejectedTelemetryPose ?? null });
     go2Agent.updateVisualFromAgentRoot(deltaSeconds);
     go2Panel?.update();
     go2SyncPanel?.update();
   }
+  airlockTransition?.update();
+  if (!physicalMapHold && go2TelemetryClient?.getState().telemetryActive &&
+    (airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading')) {
+    physicalMapHold = 'World transition: physical mission held. Revalidate alignment before resuming.';
+    go2TelemetryClient.api.stop();
+  }
   const bridgeState = go2TelemetryClient?.getState();
+  if (!physicalMapHold && bridgeState?.telemetryActive && !bridgeState.robotConnected) {
+    physicalMapHold = 'Telemetry lost: physical mission held. Revalidate alignment before resuming.';
+    go2TelemetryClient?.api.stop();
+  }
   rehearsalPanel?.update(timer.getDelta(), go2Agent?.agentRoot ?? null,
     activeCalibration.id !== SCENE_1_CALIBRATION.id ||
       (airlockTransition && airlockTransition.getState() !== 'scene1')
       ? 'Scene 1 rehearsal stopped for scene transition.'
-      : bridgeState?.telemetryActive && !bridgeState.robotConnected
+      : physicalMapHold ?? (sceneGrounding?.issues.size ? 'Placement blocked: ' + [...sceneGrounding.issues].map(([id, reason]) => `${id}: ${reason}`).join('; ') : null) ?? (!world?.layout ? 'Waiting for measured map boundaries.' : null) ?? (bridgeState?.telemetryActive && !bridgeState.robotConnected
         ? 'Robot telemetry lost. Resume after reconnection.'
-        : null);
+        : null));
   animations.update(deltaSeconds);
+  if (activeCalibration.id === SCENE_1_CALIBRATION.id) sceneGrounding?.update();
   sceneEntityHighlighter.update();
   spatialSyncElapsed += deltaSeconds;
   if (spatialSyncElapsed >= 0.25) {
     spatialSyncElapsed = 0;
+    ontology.syncLayoutRegions();
     for (const { config, root } of registry.values()) {
       if (!ontologyObjectIds.has(config.id)) {
         continue;
       }
+      ontology.updateSurface(config.id, root.userData.surfaceRegion ?? 'UNKNOWN', root.userData.layoutStatus ?? 'REGISTERED');
       root.getWorldPosition(worldPosition);
       ontology.updatePosition(config.id, {
         x: worldPosition.x,
@@ -322,6 +368,7 @@ const renderLoopStarted = performanceGovernor.start((time) => {
     }
     if (go2Agent) {
       go2Agent.agentRoot.getWorldPosition(worldPosition);
+      ontology.updateSurface('GO2-01', go2Agent.agentRoot.userData.surfaceRegion ?? 'UNKNOWN', physicalMapHold ? 'HELD' : mapBlock ? 'BLOCKED' : 'GROUNDED');
       ontology.updatePosition('GO2-01', {
         x: worldPosition.x,
         y: worldPosition.y,
@@ -377,6 +424,7 @@ const dispose = (): void => {
   demoRouteRehearsal?.dispose();
   airlockTransition?.dispose();
   airlockRehearsal?.dispose();
+  layoutRehearsal?.dispose();
   sceneEntityHighlighter.dispose();
   moonControlSystem?.dispose();
   performanceGovernor.dispose();
@@ -515,7 +563,7 @@ const bootstrap = async (): Promise<void> => {
 
   const [loadedAssets, loadedGo2Agent] = await Promise.all([
     assetLoader.loadAll(
-      import.meta.env.DEV && launchQuery.has('airlockTest') && launchQuery.has('airlockOnly')
+      import.meta.env.DEV && (launchQuery.has('airlockTest') || launchQuery.has('layoutTest')) && launchQuery.has('airlockOnly')
         ? level1.assets.filter(asset => asset.procedural)
         : level1.assets,
       () => {
@@ -533,6 +581,11 @@ const bootstrap = async (): Promise<void> => {
   rehearsalPanel = new SceneRehearsalPanel(debugHost, registry,
     level1.assets.filter(asset => asset.type === 'humanoid').map(asset => asset.id), ontology, scene);
   staticAssetSystem.initialize();
+  if (!startInScene2 && world?.layout) {
+    sceneGrounding = new SceneGrounding(registry, world.layout);
+    sceneGrounding.update();
+  }
+  rehearsalPanel.setGroundSampler((x, z) => world?.layout?.sample(x, z, false).height ?? null);
   placementPanel?.setAssetCount(registry.size, level1.assets.length);
   if (developmentToolsEnabled) {
     staticSystemsPanel = new StaticSystemsDebugPanel(
@@ -544,7 +597,14 @@ const bootstrap = async (): Promise<void> => {
   if (loadedGo2Agent) {
     go2Agent = loadedGo2Agent;
     assetLayer.add(go2Agent.object);
-    go2Agent.syncVisualFromAgentRoot();
+    const support = world?.layout?.sample(go2Agent.agentRoot.position.x, go2Agent.agentRoot.position.z);
+    if (support?.height !== null && support?.height !== undefined) go2Agent.agentRoot.position.y = support.height;
+    go2Agent.setMotionResolver((from, requested) => {
+      if (physicalMapHold || !world?.layout) return from.clone();
+      const result = world.layout.constrain(from, requested);
+      mapBlock = result.blocked; return result.position;
+    });
+    go2Agent.acknowledgeAgentRootSnap();
     go2Controller = new ManualGo2Controller();
     go2TelemetryClient = createGo2TelemetryClientFromEnvironment(
       activeCalibration,
@@ -560,6 +620,21 @@ const bootstrap = async (): Promise<void> => {
       robotController: go2Controller,
       placementController,
     });
+
+    if (import.meta.env.DEV && launchQuery.has('layoutTest')) {
+      const { LayoutRehearsal } = await import('./debug/LayoutRehearsal');
+      layoutRehearsal = new LayoutRehearsal(go2Agent, camera, orbitControls,
+        () => moonControlSystem?.setMode(ControlModes.CAMERA),
+        () => moonControlSystem?.setMode(ControlModes.ROBOT),
+        () => !!go2TelemetryClient?.getState().bridgeConnected || !!go2TelemetryClient?.isDriving(),
+        (x, z) => !!world?.layout?.footprint(x, z).traversable,
+        () => ({ world: world?.layout?.definition.id, revision: world?.layout?.definition.revision,
+          robot: world?.layout?.observation().robotState,
+          assets: registry.values().filter(a => a.config.src).map(a => ({ id: a.config.id,
+            position: a.root.getWorldPosition(new Vector3()).toArray().map(n => Number(n.toFixed(3))),
+            surface: a.root.userData.surfaceRegion, contactY: a.root.userData.surfaceY, status: a.root.userData.layoutStatus })),
+          issues: [...sceneGrounding?.issues ?? []] }));
+    }
 
     if (import.meta.env.DEV && new URLSearchParams(location.search).has('routeTest')) {
       const { DemoRouteRehearsal } = await import('./debug/DemoRouteRehearsal');
@@ -620,7 +695,7 @@ const bootstrap = async (): Promise<void> => {
         },
         canTrigger: () => {
           const state = go2TelemetryClient?.getState();
-          return !document.hidden && !(state?.telemetryActive && !state.robotConnected);
+          return !document.hidden && !physicalMapHold && !!world?.layout && !(state?.telemetryActive && !state.robotConnected);
         },
         activateScene2World: () => scene.add(...scene2Staging.children),
         loadWorldLabsWorld: async (url) => {

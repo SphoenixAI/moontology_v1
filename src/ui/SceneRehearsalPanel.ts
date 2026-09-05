@@ -17,6 +17,7 @@ export class SceneRehearsalPanel {
   private readonly armButton = document.createElement('button');
   private readonly rows = new Map<string, HTMLButtonElement>();
   private readonly beacon = new Mesh(new RingGeometry(0.46, 0.53, 48), new MeshBasicMaterial({ color: 0xf1d395, side: DoubleSide, transparent: true, opacity: 0.8, depthWrite: false }));
+  private groundSampler: ((x: number, z: number) => number | null) | null = null;
   private lastBlock: string | null = 'Waiting for scene readiness.';
   private previousActive: string | null = null;
   private nearbyId: string | null = null;
@@ -62,6 +63,8 @@ export class SceneRehearsalPanel {
     document.addEventListener('visibilitychange', this.onVisibility);
     this.freeze(true);
   }
+
+  setGroundSampler(sample: (x: number, z: number) => number | null): void { this.groundSampler = sample; }
 
   private freeze(reset = false): void {
     for (const id of this.expectedIds) {
@@ -117,7 +120,9 @@ export class SceneRehearsalPanel {
     }
     this.beacon.visible = !unavailable;
     const marker = next?.stop ?? [AIRLOCK_PLACEMENT.position[0], 0, AIRLOCK_PLACEMENT.position[2] + 1.3];
-    this.beacon.position.set(marker[0], 0.1, marker[2]);
+    const ground = this.groundSampler?.(marker[0], marker[2]);
+    this.beacon.visible &&= ground !== null && ground !== undefined;
+    this.beacon.position.set(marker[0], (ground ?? 0) + .035, marker[2]);
     const guidance = next ? `${next.title} · ${distance.toFixed(1)} m away` : 'All five cues complete · continue to the habitat door.';
     this.status.textContent = unavailable ?? `${this.director.completed.size}/5 complete · ${this.director.state}. ${this.director.state === 'paused' ? this.director.reason + ' ' : ''}${guidance}`;
   }

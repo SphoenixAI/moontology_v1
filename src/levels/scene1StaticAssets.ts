@@ -219,13 +219,13 @@ export const SCENE_1_WORK_GROUPS = [
       {
         id: 'Airlock-2A-PurgePoint',
         role: 'Go2 Handshake / Purge Trigger',
-        position: [-0.45, 0, -13.1],
+        position: [-0.9, -0.72, -16.6],
         sceneTags: ['airlock', 'purge', 'go2'],
       },
       {
         id: 'Airlock-2A-EmergencyPoint',
         role: 'Go2 Pounce / Emergency Hatch Trigger',
-        position: [0.3, 0, -13.1],
+        position: [-0.3, -0.72, -16.6],
         sceneTags: ['airlock', 'emergency', 'go2'],
       },
     ],

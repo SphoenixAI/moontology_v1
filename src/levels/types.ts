@@ -1,3 +1,4 @@
+import type { LayoutDefinition } from './sceneLayouts';
 export type Vector3Tuple = readonly [number, number, number];
 
 export type AssetType =
@@ -109,6 +110,7 @@ export interface StaticSystemsConfig {
 }
 
 export interface WorldConfig {
+  layout?: LayoutDefinition;
   mode: WorldMode;
   visualSrc: string;
   colliderSrc: string;

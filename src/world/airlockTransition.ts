@@ -114,13 +114,8 @@ export class AirlockTransitionController {
   }
 
   public enterScene2(): void {
-    if (this.disposed || this.transitionStarted || this.state === 'scene2') {
-      return;
-    }
-    if (!this.approachReached) {
-      this.reachApproach();
-    }
-    this.requestWorld2Transition();
+    // External map interactions obey the same doorway and safety checks as walking.
+    this.update();
   }
 
   private reachApproach(): void {

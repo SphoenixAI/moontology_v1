@@ -1,3 +1,4 @@
+import { WorldLayout } from './WorldLayout';
 import type {
   SparkRenderer as SparkRendererInstance,
   SplatMesh as SplatMeshInstance,
@@ -16,11 +17,11 @@ import type { WorldConfig, WorldMode } from '../levels/types';
 import { createCriticalGameplayColliders } from './createCriticalGameplayColliders';
 import {
   createPlaceholderWorld,
-  createStagingCollisionFloor,
 } from './placeholderWorld';
 import { MOONTOLOGY_CONFIG } from '../config/moontologyConfig';
 
 export interface WorldHandle {
+  layout: WorldLayout | null;
   root: Group;
   visualLayer: Group;
   collisionLayer: Group;
@@ -198,8 +199,6 @@ export const loadWorld = async ({
 
   if (activeMode === 'placeholder') {
     createPlaceholderWorld(visualLayer, criticalGameplayColliders);
-  } else {
-    createStagingCollisionFloor(criticalGameplayColliders);
   }
 
   if (config.mode === 'marble') {
@@ -269,7 +268,11 @@ export const loadWorld = async ({
     }
   };
 
+  const layout = activeMode === 'marble' && collider && config.layout
+    ? new WorldLayout(config.layout, worldRoot, collider) : null;
+
   return {
+    layout,
     root: worldRoot,
     visualLayer,
     collisionLayer,

@@ -1,3 +1,4 @@
+import type { WorldLayout } from '../world/WorldLayout';
 export const ONTOLOGY_OBJECT_TYPES = [
   'Humanoid',
   'Go2',
@@ -86,6 +87,10 @@ export interface OntologyProperties {
   source?: string;
   subjectId?: string;
   severity?: 'INFO' | 'AMBER' | 'RED';
+  surfaceRegion?: string;
+  placementStatus?: string;
+  boundary?: readonly (readonly number[])[];
+  validActions?: readonly string[];
   rehearsalState?: string;
   rehearsalAction?: string;
 }
@@ -215,6 +220,7 @@ export interface FleetSummary {
 }
 
 export interface OntologySnapshot {
+  layout: ReturnType<WorldLayout['observation']> | null;
   revision: number;
   mission: MissionContext;
   objects: readonly OntologyObject[];

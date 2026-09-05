@@ -23,7 +23,7 @@ export const SCENE_1_ROUTE_SPAWN = { x: 1.5, y: 0, z: 5, rotationY: 0.65 };
 export const EQUIPMENT_STAGING: Record<string, { position: [number, number, number]; rotation: [number, number, number] }> = {
   'LOGISTICS-ROVER-01': { position: [8.1, 0, 1.4], rotation: [0, -0.65, 0] },
   'EXC-01': { position: [-9.3, 0, -0.5], rotation: [0, 0.6, 0] },
-  'EXC-02': { position: [-9.4, 0, 5], rotation: [0, -0.6, 0] },
+  'EXC-02': { position: [-14, 0, -3.4], rotation: [0, -0.6, 0] },
   'CABLE-ROVER-01': { position: [-8, 0, -7.2], rotation: [0, -0.25, 0] },
   'ROVER-01': { position: [5.2, 0, -5.8], rotation: [0, 0.55, 0] },
   'PowerNode-B': { position: [-5.3, 0.08, -6.2], rotation: [0, 0, 0] },
