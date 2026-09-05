@@ -125,6 +125,14 @@ export class AirlockController {
     this.headerMask.name = 'headerMask';
     this.headerMask.position.set(0, 1.61, 0.15);
 
+    // The splat already shows the building entrance. Keep the controller and
+    // trigger registration, but hide the detached facade overlay and masks.
+    for (const visual of [this.doorPanel, this.portalMask, this.headerMask]) {
+      visual.visible = false;
+      visual.raycast = () => undefined;
+    }
+    placementRoot.userData.hideSelectionHighlight = true;
+
     this.approachTriggerAnchor = createTriggerAnchor(
       'approachTriggerAnchor',
       FACADE_AIRLOCK_APPROACH_TRIGGER_LOCAL,

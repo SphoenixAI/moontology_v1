@@ -52,6 +52,7 @@ export class SceneEntityHighlighter {
   }
 
   select(target: Object3D | null, discrepancy: boolean): void {
+    if (target?.userData.hideSelectionHighlight) target = null;
     if (this.target !== target) {
       this.target = target;
       this.boundsTarget = target;
