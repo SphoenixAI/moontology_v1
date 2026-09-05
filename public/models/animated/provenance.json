@@ -1,0 +1,32 @@
+{
+  "source_task": "Create game-ready rover GLB",
+  "source_task_id": "01a06f30-d3e1-7863-9034-52654b5774da",
+  "copied_on": "2026-09-05",
+  "original_assets_modified": false,
+  "assets": [
+    {
+      "file": "rover-driving.glb",
+      "source_output": "outputs/rover-driving/rover-driving.glb",
+      "bytes": 57286996,
+      "sha256": "f57455c717f08cf255b89b3e03d16b27b1d4abe90eb3144f6110652acd4b7698",
+      "exact_source_duplicate_verified": true,
+      "wheel_nodes": 4,
+      "preserved_clips": ["Drive_Forward", "Drive_InPlace"],
+      "texture_maps": 3,
+      "texture_resolution": "4096 x 4096",
+      "runtime": "Original wheel pivots rotate by traveled distance. Scene root follows a closed route; embedded root motion is not replayed."
+    },
+    {
+      "file": "logistics-rover.glb",
+      "source_output": "outputs/rover/rover.glb",
+      "bytes": 1652428,
+      "sha256": "fbcd7e986a2b11ca2f9e3f633fc97da988d1d953a5296917da90395a13d14c2b",
+      "exact_source_duplicate_verified": true,
+      "wheel_nodes": 6,
+      "preserved_clips": [],
+      "texture_maps": 3,
+      "texture_resolution": "2048 x 2048",
+      "runtime": "Original procedural wheel pivots rotate by traveled distance on a closed route."
+    }
+  ]
+}

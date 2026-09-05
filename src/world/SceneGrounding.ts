@@ -99,7 +99,8 @@ export class SceneGrounding {
       asset.root.userData.surfaceY = ground;
       const hx = humanoid ? .32 : contact.halfX, hz = humanoid ? .32 : contact.halfZ;
       const x = root.x + (humanoid ? 0 : contact.centerX), z = root.z + (humanoid ? 0 : contact.centerZ);
-      contact.obstacle = { id, polygon: [[x-hx,z-hz],[x+hx,z-hz],[x+hx,z+hz],[x-hx,z+hz]] };
+      contact.obstacle = { id, scheduledMotion: asset.root.userData.sceneMotionSource === 'SCHEDULED_BACKGROUND',
+        polygon: [[x-hx,z-hz],[x+hx,z-hz],[x+hx,z+hz],[x-hx,z+hz]] };
       obstacles.push(contact.obstacle);
     }
     for (const id of this.contacts.keys()) if (!live.has(id)) { this.contacts.delete(id); this.issues.delete(id); }

@@ -1,9 +1,6 @@
 import {
-  BoxGeometry,
   Group,
   Mesh,
-  MeshBasicMaterial,
-  MeshStandardMaterial,
   Vector3,
   type Box3,
   type Material,
@@ -15,6 +12,7 @@ import {
 } from '../levels/scene2';
 import type { AirlockInteractionConfig } from '../levels/types';
 import { AirlockLeakParticles } from './AirlockLeakParticles';
+import { AirlockDoorVisual } from './AirlockDoorVisual';
 
 export const AirlockStates = {
   CLOSED: 'CLOSED',
@@ -53,20 +51,13 @@ type EventEmitter = (
 
 type Sequence = 'NONE' | 'PURGE' | 'EMERGENCY';
 
-const DOOR_DEPTH = 0.08;
-const DOOR_WIDTH = 2.2;
-const DOOR_HEIGHT = 2.8;
-const DOOR_Z = 0.09;
-
 export class AirlockController {
   private readonly config: AirlockInteractionConfig;
   private readonly emit: EventEmitter;
-  private readonly closedPosition: Vector3;
   private openFraction = 0;
   private tweenStartFraction = 0;
-  private readonly doorPanel: Mesh;
-  private readonly portalMask: Mesh;
-  private readonly headerMask: Mesh;
+  private readonly visual: AirlockDoorVisual;
+  private lightOverride: AirlockLightMode | null = null;
   private readonly approachTriggerAnchor: Group;
   private readonly thresholdTriggerAnchor: Group;
   private readonly removedSourceModel: Object3D;
@@ -84,53 +75,13 @@ export class AirlockController {
   ) {
     this.config = config;
     this.emit = emit;
-    this.closedPosition = new Vector3().fromArray(config.closedPosition);
-    this.closedPosition.z = DOOR_Z;
 
     placementRoot.name = 'facadeAirlockAnchor';
     sourceModel.removeFromParent();
     sourceModel.visible = false;
     this.removedSourceModel = sourceModel;
 
-    this.portalMask = new Mesh(
-      new BoxGeometry(2.28, 2.9, 0.05),
-      new MeshBasicMaterial({ color: 0x030304 }),
-    );
-    this.portalMask.name = 'portalMask';
-    this.portalMask.position.z = 0.015;
-
-    this.doorPanel = new Mesh(
-      new BoxGeometry(DOOR_WIDTH, DOOR_HEIGHT, DOOR_DEPTH),
-      new MeshStandardMaterial({
-        color: 0x586166,
-        metalness: 0.55,
-        roughness: 0.38,
-        emissive: 0x151b20,
-        emissiveIntensity: 0.35,
-      }),
-    );
-    this.doorPanel.name = 'doorPanel';
-    this.doorPanel.position.copy(this.closedPosition);
-    this.doorPanel.castShadow = true;
-    this.doorPanel.receiveShadow = true;
-
-    this.headerMask = new Mesh(
-      new BoxGeometry(2.46, 0.42, 0.18),
-      new MeshStandardMaterial({
-        color: 0x202124,
-        metalness: 0.62,
-        roughness: 0.28,
-      }),
-    );
-    this.headerMask.name = 'headerMask';
-    this.headerMask.position.set(0, 1.61, 0.15);
-
-    // The splat already shows the building entrance. Keep the controller and
-    // trigger registration, but hide the detached facade overlay and masks.
-    for (const visual of [this.doorPanel, this.portalMask, this.headerMask]) {
-      visual.visible = false;
-      visual.raycast = () => undefined;
-    }
+    this.visual = new AirlockDoorVisual();
     placementRoot.userData.hideSelectionHighlight = true;
 
     this.approachTriggerAnchor = createTriggerAnchor(
@@ -143,9 +94,7 @@ export class AirlockController {
     );
 
     placementRoot.add(
-      this.portalMask,
-      this.doorPanel,
-      this.headerMask,
+      this.visual.object,
       this.approachTriggerAnchor,
       this.thresholdTriggerAnchor,
     );
@@ -214,7 +163,8 @@ export class AirlockController {
   }
 
   setLightOverride(mode: AirlockLightMode | null): void {
-    void mode;
+    this.lightOverride = mode;
+    this.visual.setStatus(mode ?? this.state);
   }
 
   update(deltaSeconds: number): void {
@@ -271,26 +221,21 @@ export class AirlockController {
 
   dispose(): void {
     this.leakParticles.dispose();
-    disposeMesh(this.doorPanel);
-    disposeMesh(this.portalMask);
-    disposeMesh(this.headerMask);
+    this.visual.dispose();
     this.approachTriggerAnchor.removeFromParent();
     this.thresholdTriggerAnchor.removeFromParent();
     disposeObjectResources(this.removedSourceModel);
   }
 
   private applyDoorPose(): void {
-    // Retract into the lintel: the visible panel never rises above the facade.
-    this.doorPanel.scale.y = Math.max(0.001, 1 - this.openFraction);
-    this.doorPanel.position.copy(this.closedPosition);
-    this.doorPanel.position.y += DOOR_HEIGHT * this.openFraction / 2;
+    this.visual.setPose(this.openFraction);
   }
 
   private enterState(state: AirlockState): void {
     this.state = state;
     this.elapsed = 0;
     this.tweenStartFraction = this.openFraction;
-    this.doorPanel.visible = state !== AirlockStates.OPEN;
+    this.visual.setStatus(this.lightOverride ?? state);
 
     if (
       state === AirlockStates.CLOSED ||
@@ -316,15 +261,6 @@ const createTriggerAnchor = (name: string, bounds: Box3): Group => {
   anchor.position.copy(bounds.getCenter(new Vector3()));
   anchor.userData.triggerSize = bounds.getSize(new Vector3()).toArray();
   return anchor;
-};
-
-const disposeMesh = (mesh: Mesh): void => {
-  mesh.removeFromParent();
-  mesh.geometry.dispose();
-  const materials = Array.isArray(mesh.material)
-    ? mesh.material
-    : [mesh.material];
-  materials.forEach((material) => material.dispose());
 };
 
 const disposeObjectResources = (root: Object3D): void => {

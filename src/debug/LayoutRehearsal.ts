@@ -1,6 +1,19 @@
-import { Vector3, type PerspectiveCamera } from 'three';
+import { Mesh, Texture, Vector3, type Object3D, type PerspectiveCamera } from 'three';
 import type { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Go2Agent } from '../go2/Go2Agent';
+
+export const describeTextures = (root: Object3D) => {
+  const textures = new Map<string, {slot:string;width:number;height:number}>();
+  root.traverse(node => {
+    if (!(node instanceof Mesh)) return;
+    for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+      for (const [slot, value] of Object.entries(material)) if (value instanceof Texture) {
+        textures.set(value.uuid, {slot, width:value.source.data?.width ?? 0, height:value.source.data?.height ?? 0});
+      }
+    }
+  });
+  return [...textures.values()];
+};
 
 /** Development-only survey of the rendered map. All staging is virtual. */
 export class LayoutRehearsal {
@@ -20,6 +33,8 @@ export class LayoutRehearsal {
     Object.assign(this.panel.style, { position: 'fixed', left: '130px', top: '16px', zIndex: '100',
       background: '#152029', color: 'white', padding: '12px', width: '235px', borderRadius: '12px' });
     const title = document.createElement('p'); title.textContent = 'Map survey · virtual staging';
+    const hide = document.createElement('button'); hide.textContent = 'Hide survey';
+    hide.onclick = () => { this.panel.hidden = true; };
     const overhead = document.createElement('button'); overhead.textContent = 'Overhead survey';
     overhead.onclick = () => { freeCamera(); camera.up.set(0, 1, 0); camera.position.set(0, 29, -5.999);
       orbit.target.set(0, 0, -6); camera.lookAt(orbit.target); orbit.enabled = false; };
@@ -41,7 +56,7 @@ export class LayoutRehearsal {
     const details = document.createElement('details'), summary = document.createElement('summary');
     summary.textContent = 'Scene layout report'; this.report.style.cssText = 'max-height:250px;overflow:auto;font-size:10px;white-space:pre-wrap';
     details.append(summary, this.report);
-    this.panel.append(title, overhead, ...fields, stage, walk, stop, this.status, details); document.body.append(this.panel);
+    this.panel.append(title, hide, overhead, ...fields, stage, walk, stop, this.status, details); document.body.append(this.panel);
   }
   update(): void {
     const now = performance.now(), dt = Math.min(.05, (now - this.lastUpdate) / 1000); this.lastUpdate = now;

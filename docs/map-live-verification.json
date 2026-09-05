@@ -1,0 +1,956 @@
+{
+  "verified_at": "2026-09-05T01:54:32.404Z",
+  "base_url": "http://10.0.0.164:5173/api/map",
+  "request_origin": "map laptop private LAN address; not Laptop #2",
+  "cross_machine_verified": false,
+  "reason": "Laptop #2 SSH connection refused; consumer HTTP proof pending",
+  "schema_validation": "all five live observations passed",
+  "semantic_change": {
+    "before": {
+      "run_id": null,
+      "phase": "IDLE",
+      "reported_phase": null,
+      "target_id": null,
+      "mode": "rehearsal",
+      "map_armed": false,
+      "physical_arming": "owned_by_laptop2",
+      "verification_scope": "map_semantic_only",
+      "hold_reason": null
+    },
+    "changed": {
+      "run_id": "c913255b-d9e4-4b88-a6f2-b77765ab2ef0",
+      "phase": "RUNNING",
+      "reported_phase": null,
+      "target_id": "rover-1",
+      "mode": "rehearsal",
+      "map_armed": false,
+      "physical_arming": "owned_by_laptop2",
+      "verification_scope": "map_semantic_only",
+      "hold_reason": null
+    },
+    "out_of_range_error": "approach_required",
+    "rejected_phase": "RUNNING",
+    "restored": {
+      "run_id": null,
+      "phase": "IDLE",
+      "reported_phase": null,
+      "target_id": null,
+      "mode": "rehearsal",
+      "map_armed": false,
+      "physical_arming": "owned_by_laptop2",
+      "verification_scope": "map_semantic_only",
+      "hold_reason": null
+    }
+  },
+  "robot_pose_unchanged": true,
+  "physical_commands_sent": 0,
+  "observation": {
+    "scene_session_id": "66d83b8b-53db-4701-9026-c8570acf4b60",
+    "scene_revision": 26,
+    "observation_sequence": 260,
+    "timestamp": "2026-09-05T01:54:32.404Z",
+    "map_ready": true,
+    "active_world": "SCENE_1:marble:scene1",
+    "robot_pose": {
+      "x": 1.5,
+      "y": -0.5318743788909176,
+      "z": 5,
+      "yaw": 0.6499999999999999,
+      "frame": "three_world",
+      "source": "manual",
+      "telemetry_fresh": false,
+      "telemetry_sequence": -1,
+      "telemetry_age_ms": null
+    },
+    "mission_state": {
+      "run_id": null,
+      "phase": "IDLE",
+      "reported_phase": null,
+      "target_id": null,
+      "mode": "rehearsal",
+      "map_armed": false,
+      "physical_arming": "owned_by_laptop2",
+      "verification_scope": "map_semantic_only",
+      "hold_reason": null
+    },
+    "entities": [
+      {
+        "id": "H01",
+        "scene_object_id": "H01",
+        "type": "Humanoid",
+        "state": "STAGED",
+        "world_position": {
+          "x": -5.9,
+          "y": -0.4794597873319487,
+          "z": 0.4
+        },
+        "distance_from_robot": 8.713208364316786,
+        "bearing": 1.9354264234693406,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "H04",
+        "scene_object_id": "H04",
+        "type": "Humanoid",
+        "state": "STAGED",
+        "world_position": {
+          "x": 5.2,
+          "y": -0.5706551597442004,
+          "z": 1.4
+        },
+        "distance_from_robot": 5.162363799656123,
+        "bearing": 0.12170039002458255,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "H02",
+        "scene_object_id": "H02",
+        "type": "Humanoid",
+        "state": "STAGED",
+        "world_position": {
+          "x": -4.9,
+          "y": -0.5818570445654611,
+          "z": -5.6
+        },
+        "distance_from_robot": 12.382245353731285,
+        "bearing": 1.4639859030827247,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "H03",
+        "scene_object_id": "H03",
+        "type": "Humanoid",
+        "state": "STAGED",
+        "world_position": {
+          "x": 1.8,
+          "y": -0.6022122999205719,
+          "z": -6.5
+        },
+        "distance_from_robot": 11.503912377969504,
+        "bearing": 0.8947152855041445,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "H06",
+        "scene_object_id": "H06",
+        "type": "Humanoid",
+        "state": "STAGED",
+        "world_position": {
+          "x": 4.4,
+          "y": -0.6273726388094206,
+          "z": -10.4
+        },
+        "distance_from_robot": 15.670673246545599,
+        "bearing": 0.7346643706877856,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "rover-1",
+        "scene_object_id": "EXC-01",
+        "type": "Excavator",
+        "state": "offline",
+        "world_position": {
+          "x": -9.3,
+          "y": -0.3279918686120027,
+          "z": -0.5
+        },
+        "distance_from_robot": 12.11981848048889,
+        "bearing": 2.0205651047703146,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": 3,
+        "interactable": false,
+        "object_affordances": [
+          "approach",
+          "inspect",
+          "activate",
+          "verify"
+        ],
+        "currently_valid_actions": [
+          "approach"
+        ]
+      },
+      {
+        "id": "EXC-02",
+        "scene_object_id": "EXC-02",
+        "type": "Excavator",
+        "state": "STAGED",
+        "world_position": {
+          "x": -14,
+          "y": -0.18023996827805197,
+          "z": -3.4
+        },
+        "distance_from_robot": 17.62980430974774,
+        "bearing": 1.9949620863890667,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "CABLE-ROVER-01",
+        "scene_object_id": "CABLE-ROVER-01",
+        "type": "CableRover",
+        "state": "STAGED",
+        "world_position": {
+          "x": -8,
+          "y": -0.5508936094385909,
+          "z": -7.2
+        },
+        "distance_from_robot": 15.462535367784934,
+        "bearing": 1.5824067105592285,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "ROVER-01",
+        "scene_object_id": "ROVER-01",
+        "type": "Rover",
+        "state": "STAGED",
+        "world_position": {
+          "x": 5.2,
+          "y": -0.5917526007598243,
+          "z": -5.8
+        },
+        "distance_from_robot": 11.416216536138409,
+        "bearing": 0.5907357143854626,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "LOGISTICS-ROVER-01",
+        "scene_object_id": "LOGISTICS-ROVER-01",
+        "type": "Rover",
+        "state": "STAGED",
+        "world_position": {
+          "x": 8.1,
+          "y": -0.4939672653336083,
+          "z": 1.4
+        },
+        "distance_from_robot": 7.517978451685001,
+        "bearing": -0.1506532783198698,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "Airlock-2A",
+        "scene_object_id": "Airlock-2A",
+        "type": "Airlock",
+        "state": "STAGED",
+        "world_position": {
+          "x": -0.9,
+          "y": 0.95,
+          "z": -18.35
+        },
+        "distance_from_robot": 23.473016423118697,
+        "bearing": 1.0232203771454005,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      },
+      {
+        "id": "PowerNode-B",
+        "scene_object_id": "PowerNode-B",
+        "type": "PowerNode",
+        "state": "STAGED",
+        "world_position": {
+          "x": -5.3,
+          "y": -0.5060650197028769,
+          "z": -6.2
+        },
+        "distance_from_robot": 13.102671483327361,
+        "bearing": 1.4664513813218885,
+        "visible": true,
+        "line_of_sight": null,
+        "interaction_radius": null,
+        "interactable": false,
+        "object_affordances": [],
+        "currently_valid_actions": []
+      }
+    ],
+    "layout": {
+      "world": "SCENE_1",
+      "layoutRevision": 1,
+      "obstacleRevision": 1,
+      "source": "PRESENTATION_MAP_AUTHORED_LAYOUT",
+      "physicalValidation": "UNVERIFIED",
+      "unknownAreas": "BLOCKED",
+      "unregisteredSplatFeatures": "UNKNOWN",
+      "heightSource": "WORLD_LABS_COLLIDER_MEASUREMENTS",
+      "regions": [
+        {
+          "id": "Exterior-Apron",
+          "label": "Exterior work apron",
+          "kind": "terrain",
+          "polygon": [
+            [
+              -17,
+              -23
+            ],
+            [
+              15,
+              -23
+            ],
+            [
+              15,
+              10
+            ],
+            [
+              -17,
+              10
+            ]
+          ],
+          "validActions": [
+            "walk"
+          ]
+        },
+        {
+          "id": "Walkway-Central",
+          "label": "Central raised walkway",
+          "kind": "walkway",
+          "polygon": [
+            [
+              -1,
+              10
+            ],
+            [
+              1.6,
+              10
+            ],
+            [
+              1,
+              3
+            ],
+            [
+              0.6,
+              0
+            ],
+            [
+              0.7,
+              -4
+            ],
+            [
+              1.7,
+              -9
+            ],
+            [
+              3.6,
+              -14
+            ],
+            [
+              4,
+              -17
+            ],
+            [
+              2.5,
+              -17
+            ],
+            [
+              2,
+              -14
+            ],
+            [
+              0.2,
+              -9
+            ],
+            [
+              -0.8,
+              -4
+            ],
+            [
+              -1,
+              0
+            ],
+            [
+              -0.7,
+              3
+            ]
+          ],
+          "validActions": [
+            "walk"
+          ]
+        },
+        {
+          "id": "Walkway-West",
+          "label": "West service walkway",
+          "kind": "walkway",
+          "polygon": [
+            [
+              -16,
+              3
+            ],
+            [
+              -16,
+              4.4
+            ],
+            [
+              -1,
+              1.4
+            ],
+            [
+              0,
+              0.1
+            ],
+            [
+              -3,
+              0.2
+            ]
+          ],
+          "validActions": [
+            "walk"
+          ]
+        },
+        {
+          "id": "Walkway-East",
+          "label": "East logistics walkway",
+          "kind": "walkway",
+          "polygon": [
+            [
+              0,
+              -1
+            ],
+            [
+              0,
+              0.5
+            ],
+            [
+              14,
+              5
+            ],
+            [
+              14,
+              3.5
+            ]
+          ],
+          "validActions": [
+            "walk"
+          ]
+        },
+        {
+          "id": "Walkway-Habitat",
+          "label": "Habitat entrance walkway",
+          "kind": "walkway",
+          "polygon": [
+            [
+              0.2,
+              -9
+            ],
+            [
+              1.8,
+              -9
+            ],
+            [
+              -0.1,
+              -14
+            ],
+            [
+              0.35,
+              -17.5
+            ],
+            [
+              -1.3,
+              -17.5
+            ],
+            [
+              -1.4,
+              -13
+            ]
+          ],
+          "validActions": [
+            "walk"
+          ]
+        },
+        {
+          "id": "Building-North",
+          "label": "North habitat shell",
+          "kind": "building",
+          "polygon": [
+            [
+              -17,
+              -25
+            ],
+            [
+              1.8,
+              -25
+            ],
+            [
+              1.8,
+              -21
+            ],
+            [
+              0.6,
+              -18.2
+            ],
+            [
+              -0.1,
+              -17
+            ],
+            [
+              -2.5,
+              -15.8
+            ],
+            [
+              -8,
+              -14.1
+            ],
+            [
+              -12,
+              -15.5
+            ],
+            [
+              -17,
+              -20
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "Building-West",
+          "label": "West habitat shell",
+          "kind": "building",
+          "polygon": [
+            [
+              -24,
+              1.8
+            ],
+            [
+              -17,
+              2.1
+            ],
+            [
+              -12,
+              2.8
+            ],
+            [
+              -8.8,
+              3.5
+            ],
+            [
+              -7.6,
+              5
+            ],
+            [
+              -8,
+              7
+            ],
+            [
+              -11,
+              10.5
+            ],
+            [
+              -18,
+              14
+            ],
+            [
+              -24,
+              14
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "Building-East",
+          "label": "East habitat shell",
+          "kind": "building",
+          "polygon": [
+            [
+              17,
+              4
+            ],
+            [
+              23,
+              4
+            ],
+            [
+              23,
+              15
+            ],
+            [
+              17,
+              15
+            ],
+            [
+              16,
+              12
+            ],
+            [
+              16,
+              7
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "Building-South",
+          "label": "South habitat shell",
+          "kind": "building",
+          "polygon": [
+            [
+              4,
+              12
+            ],
+            [
+              9,
+              12
+            ],
+            [
+              13,
+              20
+            ],
+            [
+              2,
+              20
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "Doorway-2A",
+          "label": "Habitat doorway to World 2",
+          "kind": "doorway",
+          "polygon": [
+            [
+              -1.55,
+              -18.95
+            ],
+            [
+              -0.15,
+              -18.95
+            ],
+            [
+              -0.15,
+              -16.2
+            ],
+            [
+              -1.55,
+              -16.2
+            ]
+          ],
+          "floorY": -0.72,
+          "destination": "SCENE_2",
+          "validActions": [
+            "approach",
+            "enter_world_2"
+          ]
+        }
+      ],
+      "robotState": {
+        "position": [
+          1.5,
+          -0.5318743788909176,
+          5
+        ],
+        "regionId": "Exterior-Apron",
+        "blocked": null,
+        "physicalHold": null,
+        "rejectedTelemetryPose": null
+      },
+      "obstacles": [
+        {
+          "id": "H01",
+          "polygon": [
+            [
+              -6.220000000000001,
+              0.08000000000000002
+            ],
+            [
+              -5.58,
+              0.08000000000000002
+            ],
+            [
+              -5.58,
+              0.72
+            ],
+            [
+              -6.220000000000001,
+              0.72
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "H04",
+          "polygon": [
+            [
+              4.88,
+              1.0799999999999998
+            ],
+            [
+              5.5200000000000005,
+              1.0799999999999998
+            ],
+            [
+              5.5200000000000005,
+              1.72
+            ],
+            [
+              4.88,
+              1.72
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "H02",
+          "polygon": [
+            [
+              -5.220000000000001,
+              -5.92
+            ],
+            [
+              -4.58,
+              -5.92
+            ],
+            [
+              -4.58,
+              -5.279999999999999
+            ],
+            [
+              -5.220000000000001,
+              -5.279999999999999
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "H03",
+          "polygon": [
+            [
+              1.48,
+              -6.82
+            ],
+            [
+              2.12,
+              -6.82
+            ],
+            [
+              2.12,
+              -6.18
+            ],
+            [
+              1.48,
+              -6.18
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "H06",
+          "polygon": [
+            [
+              4.08,
+              -10.72
+            ],
+            [
+              4.720000000000001,
+              -10.72
+            ],
+            [
+              4.720000000000001,
+              -10.08
+            ],
+            [
+              4.08,
+              -10.08
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "EXC-01",
+          "polygon": [
+            [
+              -11.550000000000002,
+              -2.5975832451753074
+            ],
+            [
+              -7.049999999999999,
+              -2.5975832451753074
+            ],
+            [
+              -7.049999999999999,
+              1.5975832451753074
+            ],
+            [
+              -11.550000000000002,
+              1.5975832451753074
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "EXC-02",
+          "polygon": [
+            [
+              -16.11243031598321,
+              -5.65
+            ],
+            [
+              -11.887569684016789,
+              -5.65
+            ],
+            [
+              -11.887569684016789,
+              -1.1500000000000004
+            ],
+            [
+              -16.11243031598321,
+              -1.1500000000000004
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "CABLE-ROVER-01",
+          "polygon": [
+            [
+              -9.028437767210102,
+              -8.35
+            ],
+            [
+              -6.971562232789898,
+              -8.35
+            ],
+            [
+              -6.971562232789898,
+              -6.049999999999999
+            ],
+            [
+              -9.028437767210102,
+              -6.049999999999999
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "ROVER-01",
+          "polygon": [
+            [
+              3.8500000000000014,
+              -7.054680741054994
+            ],
+            [
+              6.549999999999999,
+              -7.054680741054994
+            ],
+            [
+              6.549999999999999,
+              -4.545319258945006
+            ],
+            [
+              3.8500000000000014,
+              -4.545319258945006
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "LOGISTICS-ROVER-01",
+          "polygon": [
+            [
+              6.523348695899321,
+              -0.2999999999999998
+            ],
+            [
+              9.676651304100679,
+              -0.2999999999999998
+            ],
+            [
+              9.676651304100679,
+              3.0999999999999996
+            ],
+            [
+              6.523348695899321,
+              3.0999999999999996
+            ]
+          ],
+          "validActions": []
+        },
+        {
+          "id": "PowerNode-B",
+          "polygon": [
+            [
+              -5.429999995231628,
+              -6.329999995231629
+            ],
+            [
+              -5.170000004768371,
+              -6.329999995231629
+            ],
+            [
+              -5.170000004768371,
+              -6.070000004768372
+            ],
+            [
+              -5.429999995231628,
+              -6.070000004768372
+            ]
+          ],
+          "validActions": []
+        }
+      ]
+    },
+    "last_event": {
+      "kind": "mission_reset",
+      "timestamp": "2026-09-05T01:54:32.404Z"
+    },
+    "authoritative_browser": {
+      "browser_id": "fbaae60b-b983-40af-b58e-7f32f39e432b",
+      "url": "http://127.0.0.1:5173/"
+    },
+    "spatial_contract": {
+      "frame": "three_world",
+      "up": "+Y",
+      "forward_at_zero_yaw": "+X",
+      "yaw_positive_toward": "-Z",
+      "position_units": "world_units",
+      "meters_to_world_units": 1,
+      "distance_units": "meters_planar_xz",
+      "bearing_units": "radians_relative_to_robot",
+      "visible_means": "registered_object_and_ancestors_visible",
+      "line_of_sight": "unknown_not_raycast_verified"
+    }
+  }
+}

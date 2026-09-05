@@ -2,6 +2,7 @@ import { Vector3, type Object3D, type PerspectiveCamera } from 'three';
 import type { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Go2Agent } from '../go2/Go2Agent';
 import type { AirlockTransitionController } from '../world/airlockTransition';
+import type { StaticSceneRuntimeApi } from '../static-assets/StaticAssetSystem';
 
 /** Explicit development-only virtual walk; never sends bridge commands. */
 export class AirlockRehearsal {
@@ -11,9 +12,11 @@ export class AirlockRehearsal {
   private readonly actor: Go2Agent;
   private readonly transition: AirlockTransitionController;
   private readonly blocked: () => boolean;
+  private readonly airlock?: StaticSceneRuntimeApi;
   constructor(anchor: Object3D, actor: Go2Agent, camera: PerspectiveCamera,
-    orbit: OrbitControls, transition: AirlockTransitionController, blocked: () => boolean) {
+    orbit: OrbitControls, transition: AirlockTransitionController, blocked: () => boolean, airlock?: StaticSceneRuntimeApi) {
     this.actor = actor; this.transition = transition; this.blocked = blocked;
+    this.airlock = airlock;
     this.panel.setAttribute('aria-label', 'Airlock development rehearsal');
     Object.assign(this.panel.style, { position: 'fixed', top: '16px', left: '130px', width: '260px',
       zIndex: '100', background: '#152029', color: 'white', padding: '12px', borderRadius: '12px' });
@@ -22,7 +25,7 @@ export class AirlockRehearsal {
     stage.onclick = () => {
       if (blocked() || transition.getState() !== 'scene1') return;
       this.walking = false;
-      const start = anchor.localToWorld(new Vector3(0, 0, 6)); start.y = 0;
+      const start = anchor.localToWorld(new Vector3(0, 0, 8.5)); start.y = 0;
       actor.agentRoot.position.copy(start);
       actor.agentRoot.rotation.y = anchor.rotation.y + Math.PI / 2;
       actor.acknowledgeAgentRootSnap();
@@ -32,6 +35,8 @@ export class AirlockRehearsal {
     };
     const walk = document.createElement('button'); walk.textContent = 'Walk through entrance';
     walk.onclick = () => { if (!blocked()) this.walking = true; };
+    const stop = document.createElement('button'); stop.textContent = 'Stop virtual walk';
+    stop.onclick = () => { this.walking = false; };
     const visibility = document.createElement('input'); visibility.type = 'checkbox'; visibility.checked = true;
     visibility.setAttribute('aria-label', 'Show facade overlay'); visibility.onchange = () => { anchor.visible = visibility.checked; };
     const visibleLabel = document.createElement('label'); visibleLabel.textContent = 'Show facade overlay'; visibleLabel.append(visibility);
@@ -43,13 +48,13 @@ export class AirlockRehearsal {
       field.oninput = () => { const value = Number(field.value); if (Number.isFinite(value)) anchor.position[axis] = value; };
       fields.append(field);
     }
-    this.panel.append(label, stage, walk, visibleLabel, fields, this.status); document.body.append(this.panel);
+    this.panel.append(label, stage, walk, stop, visibleLabel, fields, this.status); document.body.append(this.panel);
   }
   update(dt: number): void {
     const state = this.transition.getState();
     if (this.blocked() || state === 'entering' || state === 'loading' || state === 'scene2' || state === 'error') this.walking = false;
     if (this.walking) this.actor.moveForward(0.8 * Math.min(dt, 0.1));
-    this.status.textContent = `${state} · virtual root ${this.actor.agentRoot.position.toArray().map(n => n.toFixed(2)).join(', ')}`;
+    this.status.textContent = `${state} · door ${this.airlock?.getAirlockState() ?? 'unavailable'} · virtual root ${this.actor.agentRoot.position.toArray().map(n => n.toFixed(2)).join(', ')}`;
   }
   dispose(): void { this.panel.remove(); }
 }

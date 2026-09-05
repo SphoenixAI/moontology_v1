@@ -14,6 +14,17 @@ export interface AnimationBinding {
   clip: AnimationClip;
 }
 
+/** Continuous visual work, independent of once-only route/ontology cues. */
+export const setLoopingPlayback = (binding: AnimationBinding, paused: boolean, reset = false): void => {
+  const { action, mixer } = binding;
+  if (reset || action.loop !== LoopRepeat || !action.isScheduled()) {
+    action.reset().setLoop(LoopRepeat, Infinity).play();
+  }
+  action.clampWhenFinished = false;
+  action.paused = paused;
+  if (reset) mixer.update(0);
+};
+
 export class AnimationSystem {
   private readonly bindings = new Map<Object3D, AnimationBinding>();
 

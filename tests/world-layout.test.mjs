@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import { createServer } from 'vite';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { Group, Vector3 } from 'three';
-const server = await createServer({ server: { middlewareMode: true, watch: null, ws: false }, appType: 'custom' });
+const server = await createServer({ configFile: false, cacheDir: '/tmp/moontology-world-layout.test-vite', optimizeDeps: { noDiscovery: true }, server: { middlewareMode: true, watch: null, ws: false }, appType: 'custom' });
 after(() => server.close());
 const { WorldLayout } = await server.ssrLoadModule('/src/world/WorldLayout.ts');
 const { SCENE_1_LAYOUT } = await server.ssrLoadModule('/src/levels/sceneLayouts.ts');
@@ -79,6 +79,25 @@ test('all route legs can be walked without crossing a building', () => {
     assert.equal(result.blocked,null, `route leg ${i}: ${result.blocked}`);
   }
 });
+test('standoff planning never reports arrival from inside a wide fallback ring', async () => {
+  const { planStandoff, ASSET_STANDOFF_RADII, REGION_STANDOFF_RADII, regionCentroid } = await server.ssrLoadModule('/src/relay/approach.ts');
+  // Replayed traverse pose: 0.5 units from H01's footprint after closing in on the excavator.
+  layout.setObstacles([{id:'H01',polygon:[[-6.22,.08],[-5.58,.08],[-5.58,.72],[-6.22,.72]]}]);
+  const start=new Vector3(-5.06,-.23,.2);
+  const h02=new Vector3(-4.9,-.23,-5.6);                       // 5.8 away: inside the 6-unit fallback ring
+  const wp=planStandoff(layout,start,h02,ASSET_STANDOFF_RADII,2);
+  assert.ok(wp, 'a path toward H02 exists');
+  assert.ok(start.distanceTo(wp)>.25, `waypoint must move the robot, got ${start.distanceTo(wp)}`);
+  assert.ok(Math.hypot(wp.x-h02.x,wp.z-h02.z) < Math.hypot(start.x-h02.x,start.z-h02.z), 'waypoint is closer to H02 than the start');
+  const doorway=layout.observation().regions.find(r=>r.id==='Doorway-2A');
+  const centroid=regionCentroid(doorway.polygon,start.y);     // 18.3 away: inside the 20-unit fallback ring
+  const wp2=planStandoff(layout,start,centroid,REGION_STANDOFF_RADII,3);
+  assert.ok(wp2 && start.distanceTo(wp2)>.25, 'doorway waypoint must move the robot');
+  // The tightest ring may still be satisfied trivially: standing 2 units from H02 is arrival.
+  const near=new Vector3(-4.9,-.23,-3.6);
+  assert.ok(near.distanceTo(planStandoff(layout,near,h02,ASSET_STANDOFF_RADII,2))<1e-9);
+  layout.setObstacles([]);
+});
 test('live obstacle additions, moves and removals change traversal and observation', () => {
   const before=layout.observation().obstacleRevision;
   layout.setObstacles([{id:'equipment',polygon:[[1,4],[2,4],[2,6],[1,6]]}]);
@@ -121,6 +140,28 @@ test('actual equipment footprints are grounded and clear building shells', async
     const result=layout.constrain(new Vector3(x,0,z),new Vector3(xx,0,zz));
     assert.equal(result.blocked,null,`equipment blocks route leg ${i}: ${result.blocked}`);
   }
+  const { BackgroundTraffic } = await server.ssrLoadModule('/src/vehicles/BackgroundTraffic.ts');
+  const { OntologyStore } = await server.ssrLoadModule('/src/ontology/OntologyStore.ts');
+  const { createLunarBaseOntologySeed } = await server.ssrLoadModule('/src/ontology/demoOntology.ts');
+  const { Mesh, BoxGeometry, MeshBasicMaterial } = await import('three');
+  // Include every worker's live occupancy when checking the vehicle loops.
+  for(const config of level1.assets.filter(a=>a.type==='humanoid')) {
+    const entity=new Group(), model=new Group();entity.position.fromArray(config.position);entity.add(model);scene.add(entity);
+    const body=new Mesh(new BoxGeometry(.55,1.75,.55),new MeshBasicMaterial());body.position.y=.875;model.add(body);
+    registry.register({config,root:entity,model,normalization:null,animations:[],animation:null});
+  }
+  const traffic=new BackgroundTraffic(registry,layout,new OntologyStore(createLunarBaseOntologySeed(level1)));
+  grounding.update();
+  for(let frame=0;frame<3000;frame++) {
+    traffic.update(.1,null,true);grounding.update();
+    assert.deepEqual([...grounding.issues],[],`traffic frame ${frame}`);
+    for(const id of ['ROVER-01','LOGISTICS-ROVER-01']) {
+      assert.ok(Math.abs(new Box3().setFromObject(registry.get(id).model).min.y-SCENE_1_LAYOUT.supportFloor.topY)<1e-5,`${id} contact at frame ${frame}`);
+    }
+  }
+  for(const vehicle of traffic.report()) assert.ok(vehicle.laps>=1,`${vehicle.id}: ${JSON.stringify(vehicle)}`);
+  assert.deepEqual(traffic.report().map(v=>v.wheels),[4,6]);
+  traffic.dispose();
   const excavator=registry.get('EXC-02'), accepted=excavator.root.position.clone();
   excavator.root.position.set(-9.4,0,5); grounding.update();
   assert.ok(excavator.root.position.distanceTo(accepted)<1e-6, 'invalid edit restores the accepted placement');

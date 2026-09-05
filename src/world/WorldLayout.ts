@@ -9,7 +9,7 @@ export interface LayoutSample {
   reason: string | null;
   height: number | null;
 }
-export interface LayoutObstacle { id: string; polygon: readonly Point2[] }
+export interface LayoutObstacle { id: string; polygon: readonly Point2[]; scheduledMotion?: boolean }
 export const containsPoint = (x: number, z: number, polygon: readonly Point2[]): boolean => {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
@@ -46,7 +46,17 @@ export class WorldLayout {
   dispose(): void { this.supportFloor?.geometry.dispose(); this.supportFloor?.material.dispose(); this.supportFloor?.removeFromParent(); }
   setObstacles(obstacles: LayoutObstacle[]): void {
     if (JSON.stringify(this.obstacles) === JSON.stringify(obstacles)) return;
-    this.obstacles = obstacles; this.obstacleRevision++;
+    const structure = (items: LayoutObstacle[]) => items.map(o => [o.id, o.scheduledMotion ? 'SCHEDULED_BACKGROUND' : o.polygon]);
+    if (JSON.stringify(structure(this.obstacles)) !== JSON.stringify(structure(obstacles))) this.obstacleRevision++;
+    this.obstacles = obstacles;
+  }
+  /** Continuous occupancy still uses live footprints for scheduled vehicles. */
+  occupied(x: number, z: number, radius: number, exceptId: string): boolean {
+    return this.obstacles.some(o => o.id !== exceptId && (containsPoint(x, z, o.polygon) || o.polygon.some((a, i) => {
+      const b = o.polygon[(i + 1) % o.polygon.length], dx = b[0] - a[0], dz = b[1] - a[1];
+      const t = Math.max(0, Math.min(1, ((x-a[0])*dx + (z-a[1])*dz) / (dx*dx + dz*dz || 1)));
+      return Math.hypot(x-a[0]-t*dx, z-a[1]-t*dz) < radius;
+    })));
   }
   sample(x: number, z: number, includeAssets = true): LayoutSample {
     const local = this.root.worldToLocal(new Vector3(x, 0, z));

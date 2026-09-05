@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite';
+import { mapRelayPlugin } from './server/mapRelay.js';
 
 export default defineConfig({
+  server: { host: '127.0.0.1', port: 5173, strictPort: true },
   // Some source FBXs embed JPEGs with an `_jpg` suffix. Only normalize the
   // loader's MIME lookup; the files, image bytes and texture lookup keys stay intact.
   optimizeDeps: { exclude: ['three/addons/loaders/FBXLoader.js'] },
-  plugins: [{
+  plugins: [mapRelayPlugin(), {
     name: 'fbx-embedded-image-suffix',
     enforce: 'pre',
     transform(code, id) {

@@ -160,8 +160,12 @@ export class MoonControlSystem {
   };
 
   recenterOnGo2(): void {
-    if (this.mode === ControlModes.ROBOT) this.update(0, true);
-    else this.recenter();
+    this.followCamera.update(0, true);
+    this.orbitControls.target.copy(this.followCamera.target);
+  }
+
+  setInteriorCamera(interior: boolean): void {
+    this.followCamera.setInterior(interior);
   }
 
   private readonly recenter = (): void => {

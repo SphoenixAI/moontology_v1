@@ -1,3 +1,5 @@
+import { AIRLOCK_APERTURE, AIRLOCK_PASSAGE } from './airlockPlacement';
+
 export type Point2 = readonly [number, number];
 export interface LayoutRegion {
   id: string;
@@ -21,8 +23,8 @@ const rect = (x0: number, z0: number, x1: number, z1: number): Point2[] => [[x0,
  * Everything beyond the surveyed apron / foyer remains unknown and blocked.
  */
 export const SCENE_1_LAYOUT: LayoutDefinition = {
-  id: 'SCENE_1', revision: 2,
-  supportFloor: { bounds: [-32, -32, 32, 24], topY: -.35, depth: 2 },
+  id: 'SCENE_1', revision: 4,
+  supportFloor: { bounds: [-32, -32, 32, 24], topY: AIRLOCK_APERTURE.floorY, depth: 2 },
   regions: [
     { id: 'Exterior-Apron', label: 'Exterior work apron', kind: 'terrain', polygon: rect(-17,-23,15,10) },
     { id: 'Walkway-Central', label: 'Central raised walkway', kind: 'walkway', polygon: [[-1,10],[1.6,10],[1,3],[.6,0],[.7,-4],[1.7,-9],[3.6,-14],[4,-17],[2.5,-17],[2,-14],[.2,-9],[-.8,-4],[-1,0],[-.7,3]] },
@@ -35,7 +37,7 @@ export const SCENE_1_LAYOUT: LayoutDefinition = {
     { id: 'Building-South', label: 'South habitat shell', kind: 'building', polygon: [[4,12],[9,12],[13,20],[2,20]] },
     // The same support floor continues through the doorway without a down-step.
     // The portal cuts only the entrance mouth, never a tunnel through the shell.
-    { id: 'Doorway-2A', label: 'Habitat doorway to World 2', kind: 'doorway', polygon: rect(-1.55,-18.95,-.15,-16.2), destination: 'SCENE_2' },
+    { id: 'Doorway-2A', label: 'Habitat doorway to World 2', kind: 'doorway', polygon: rect(AIRLOCK_PASSAGE.minX, AIRLOCK_PASSAGE.backZ, AIRLOCK_PASSAGE.maxX, AIRLOCK_PASSAGE.frontZ), destination: 'SCENE_2' },
   ],
 };
 

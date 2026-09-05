@@ -1,4 +1,5 @@
-import { LoopOnce, Mesh, MeshBasicMaterial, RingGeometry, DoubleSide, Vector3, type Object3D } from 'three';
+import { Mesh, MeshBasicMaterial, RingGeometry, DoubleSide, Vector3, type Object3D } from 'three';
+import { setLoopingPlayback } from '../animation/AnimationSystem';
 import type { AssetRegistry } from '../assets/AssetRegistry';
 import type { OntologyStore } from '../ontology/OntologyStore';
 import { SCENE_1_STOPS, SCENE_1_ROUTE_IDS } from '../levels/scene1DemoRoute';
@@ -15,6 +16,8 @@ export class SceneRehearsalPanel {
   private readonly position = new Vector3();
   private readonly cueButton = document.createElement('button');
   private readonly armButton = document.createElement('button');
+  private readonly animationButton = document.createElement('button');
+  private humanoidsPaused = false;
   private readonly rows = new Map<string, HTMLButtonElement>();
   private readonly beacon = new Mesh(new RingGeometry(0.46, 0.53, 48), new MeshBasicMaterial({ color: 0xf1d395, side: DoubleSide, transparent: true, opacity: 0.8, depthWrite: false }));
   private groundSampler: ((x: number, z: number) => number | null) | null = null;
@@ -32,11 +35,11 @@ export class SceneRehearsalPanel {
     this.panel.body.append(this.status);
     const actions = document.createElement('div'); actions.className = 'rehearsal-actions';
     this.armButton.textContent = 'Arm / Resume';
-    this.armButton.onclick = () => { if (!this.lastBlock) this.director.arm(); };
+    this.armButton.onclick = () => { if (!this.lastBlock) { this.director.arm(); this.humanoidsPaused = false; } };
     actions.append(this.armButton);
     for (const [label, action] of [
-      ['Pause', () => { this.director.pause(); this.freeze(); }],
-      ['Reset route', () => { this.director.reset(); this.previousActive = null; this.freeze(true); }],
+      ['Pause', () => { this.director.pause(); this.humanoidsPaused = true; this.setPlayback(true); }],
+      ['Reset route', () => { this.director.reset(); this.previousActive = null; this.humanoidsPaused = true; this.setPlayback(true, true); window.dispatchEvent(new Event('moontology:scene-reset')); }],
     ] as const) {
       const button = document.createElement('button'); button.textContent = label;
       button.onclick = action; actions.append(button);
@@ -56,27 +59,27 @@ export class SceneRehearsalPanel {
     this.cueButton.textContent = 'Play nearby cue';
     this.cueButton.onclick = () => { if (!this.lastBlock && this.nearbyId) this.director.cue(this.nearbyId); };
     const note = document.createElement('p'); note.className = 'rehearsal-note';
-    note.textContent = 'WASD / arrows: drive Go2. Follow the gold stop marker. Hold within 2 m for 1 second: one clip, once, in route order. Scene cues are simulated; physical observations remain separate.';
-    this.panel.body.append(this.cueButton, note);
+    note.textContent = 'Humanoid task animations loop continuously. WASD / arrows: drive Go2. Hold within 2 m for 1 second: one ontology cue per stop, in route order. Scene cues are simulated; physical observations remain separate.';
+    this.animationButton.onclick = () => { this.humanoidsPaused = !this.humanoidsPaused; };
+    this.panel.body.append(this.cueButton, note, this.animationButton);
     this.beacon.name = 'Next demo route stop'; this.beacon.rotation.x = -Math.PI / 2;
     scene.add(this.beacon);
     document.addEventListener('visibilitychange', this.onVisibility);
-    this.freeze(true);
+    this.setPlayback(false, true);
   }
 
   setGroundSampler(sample: (x: number, z: number) => number | null): void { this.groundSampler = sample; }
 
-  private freeze(reset = false): void {
+  private setPlayback(paused: boolean, reset = false): void {
+    const playback: string[] = [];
     for (const id of this.expectedIds) {
       const binding = this.registry.get(id)?.animation;
       if (!binding) continue;
-      if (reset) {
-        binding.action.reset().setLoop(LoopOnce, 1).play();
-        binding.action.clampWhenFinished = true;
-        binding.mixer.update(0);
-      }
-      binding.action.paused = true;
+      setLoopingPlayback(binding, paused, reset);
+      playback.push(`${id}: ${binding.action.isRunning() ? 'playing' : 'paused'} · ${binding.action.time.toFixed(1)} s`);
     }
+    this.animationButton.textContent = paused ? 'Resume humanoid animations' : 'Pause humanoid animations';
+    this.animationButton.title = playback.join('\n');
   }
 
   update(dt: number, robot: Object3D | null, block: string | null): void {
@@ -92,16 +95,12 @@ export class SceneRehearsalPanel {
     this.lastBlock = unavailable;
     robot?.getWorldPosition(this.position);
     this.director.update(dt, this.position, targets, unavailable);
-    this.freeze();
+    this.setPlayback(this.humanoidsPaused || !!unavailable || document.hidden);
+    this.animationButton.disabled = !!unavailable;
     const active = this.director.activeId;
     if (active && this.director.state === 'running') {
-      const binding = this.registry.get(active)?.animation;
-      if (binding) {
-        if (active !== this.previousActive) {
-          binding.action.reset().setLoop(LoopOnce, 1).play();
-          this.detail.textContent = SCENE_1_STOPS.find(stop => stop.id === active)?.detail ?? '';
-        }
-        binding.action.paused = false;
+      if (active !== this.previousActive) {
+        this.detail.textContent = SCENE_1_STOPS.find(stop => stop.id === active)?.detail ?? '';
       }
     }
     this.previousActive = active;
@@ -128,7 +127,7 @@ export class SceneRehearsalPanel {
   }
 
   private readonly onVisibility = (): void => {
-    if (document.hidden) { this.director.pause('Tab hidden. Resume explicitly.'); this.freeze(); }
+    if (document.hidden) { this.director.pause('Tab hidden. Resume explicitly.'); this.humanoidsPaused = true; this.setPlayback(true); }
   };
 
   dispose(): void {

@@ -1,0 +1,19 @@
+.humanoid-proximity-layer { position:fixed; inset:0; z-index:22; pointer-events:none; }
+.humanoid-proximity-layer[hidden] { display:none; }
+.humanoid-proximity-layer>svg { position:absolute; width:100%; height:100%; overflow:visible; }
+.humanoid-proximity-layer polyline { fill:none; stroke:rgb(214 204 187 / 65%); stroke-width:.75; }
+.humanoid-brief { position:absolute; top:0; left:0; width:300px; color:#f6f1ea; font:11px/1.4 Inter,system-ui,sans-serif; animation:brief-appear .28s ease-out; }
+.humanoid-brief__heading { display:flex; align-items:center; gap:9px; margin:0 0 7px; color:rgb(246 241 234 / 74%); font:9px/1.2 ui-monospace,monospace; letter-spacing:.16em; }
+.humanoid-brief__heading>span:first-child { border:1px solid rgb(191 177 160 / 48%); border-radius:5px; padding:4px 7px; background:rgb(15 17 19 / 48%); color:#f6f1ea; }
+.humanoid-brief__node { display:flex; flex-direction:column; gap:5px; border:1px solid rgb(223 213 198 / 27%); border-radius:8px; padding:9px 11px; background:linear-gradient(135deg,rgb(48 48 48 / 58%),rgb(11 15 19 / 48%)); backdrop-filter:blur(13px); -webkit-backdrop-filter:blur(13px); box-shadow:0 4px 18px rgb(0 0 0 / 12%); overflow-wrap:anywhere; }
+.humanoid-brief__node small { color:rgb(229 218 201 / 75%); font:7px/1.3 ui-monospace,monospace; letter-spacing:.11em; }
+.humanoid-brief__task { width:83%; margin:0 auto; position:relative; }
+.humanoid-brief__task strong { font-size:12px; font-weight:500; }
+.humanoid-brief__task:after { content:''; position:absolute; height:13px; width:1px; left:50%; top:100%; background:rgb(223 213 198 / 40%); }
+.humanoid-brief__branches { display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-top:24px; position:relative; }
+.humanoid-brief__branches:before { content:''; position:absolute; left:25%; right:25%; height:12px; top:-12px; border:1px solid rgb(223 213 198 / 40%); border-bottom:0; }
+.humanoid-brief__evidence { text-align:center; color:rgb(229 218 201 / 76%); font:8px/1.5 ui-monospace,monospace; margin:8px 0 0; text-shadow:0 1px 3px #000; }
+.humanoid-brief[data-result='DISCREPANCY'] .humanoid-brief__node { border-color:rgb(240 182 91 / 60%); }
+.background-traffic-toggle { margin-top:9px; width:100%; font-size:10px; padding:7px; color:var(--glass-text-secondary); border:1px solid rgb(191 177 160 / 24%); border-radius:8px; background:rgb(191 177 160 / 5%); cursor:pointer; }
+@keyframes brief-appear { from { opacity:0; } to { opacity:1; } }
+@media (prefers-reduced-motion:reduce) { .humanoid-brief { animation:none; } }

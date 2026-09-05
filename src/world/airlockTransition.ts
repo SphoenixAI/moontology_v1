@@ -49,6 +49,7 @@ export class AirlockTransitionController {
   private approachReached = false;
   private transitionStarted = false;
   private worldLoadStarted = false;
+  private doorAnimationFailed = false;
   private disposed = false;
   private delayId: number | null = null;
   private watchdogId: number | null = null;
@@ -64,6 +65,41 @@ export class AirlockTransitionController {
 
   public getState(): SceneTransitionState {
     return this.state;
+  }
+
+  /**
+   * The world the Go2 is actually in. `opening` is the facade door animation after the approach
+   * trigger: still Scene 1, still ready for map observation and physical missions. Only
+   * `entering`/`loading` are real transitions.
+   */
+  public getWorldPhase(): 'scene1' | 'scene2' | 'transition' | 'error' {
+    if (this.state === 'scene1' || this.state === 'opening') return 'scene1';
+    if (this.state === 'scene2') return 'scene2';
+    if (this.state === 'error') return 'error';
+    return 'transition';
+  }
+
+  /**
+   * Re-arm the Scene 1 airlock after a demo reset that moves the Go2 back to the spawn: close the
+   * facade door and forget the approach so a rehearsal can reach the doorway again. Ignored once a
+   * world load has started (Scene 1 is being disposed) or after Scene 2 is active.
+   */
+  public resetScene1(): boolean {
+    if (this.disposed || this.worldLoadStarted || this.state === 'scene2' || this.state === 'loading') return false;
+    if (this.delayId !== null) window.clearTimeout(this.delayId);
+    this.delayId = null;
+    this.clearWatchdog();
+    this.transitionStarted = false;
+    this.approachReached = false;
+    this.doorAnimationFailed = false;
+    this.state = 'scene1';
+    try {
+      this.options.airlock?.closeAirlock();
+    } catch (error) {
+      console.warn('[AIRLOCK] close animation failed', error);
+    }
+    console.log('[AIRLOCK] reset to scene1');
+    return true;
   }
 
   /**
@@ -108,6 +144,10 @@ export class AirlockTransitionController {
       if (!this.approachReached) {
         this.reachApproach();
       }
+      // Let rigid leaves swing clear before the fade. Missing art must never
+      // prevent entry; an available controller supplies the actual completion.
+      const doorState = this.options.airlock?.getAirlockState?.();
+      if (!this.doorAnimationFailed && doorState === 'REOPENING') return;
       console.log('[AIRLOCK] threshold crossed');
       this.requestWorld2Transition();
     }
@@ -126,6 +166,7 @@ export class AirlockTransitionController {
     try {
       this.options.airlock?.openAirlock();
     } catch (error) {
+      this.doorAnimationFailed = true;
       console.warn('[AIRLOCK] visual animation failed', error);
     }
   }
@@ -190,15 +231,17 @@ export class AirlockTransitionController {
       if (expired || this.disposed) { world.dispose(); throw new Error('World load canceled'); }
       return world;
     });
-    const scene2World = await Promise.race([
+    // A cold SPZ can take more than 45 seconds. Await genuine readiness/error;
+    // only callers with an explicit deadline opt into a timeout.
+    const scene2World = await (this.options.loadTimeoutMs === undefined ? pending : Promise.race([
       pending,
       new Promise<never>((_, reject) => {
         timeout = window.setTimeout(() => {
           expired = true;
           reject(new Error('World 2 loading timed out; leave doorway to retry.'));
-        }, this.options.loadTimeoutMs ?? 45000);
+        }, this.options.loadTimeoutMs);
       }),
-    ]).finally(() => window.clearTimeout(timeout));
+    ])).finally(() => window.clearTimeout(timeout));
     if (this.disposed) { scene2World.dispose(); return; }
 
     if (scene2World.activeMode !== 'marble') {

@@ -1,0 +1,688 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Moontology live observation (response.observation)",
+  "type": "object",
+  "properties": {
+    "scene_session_id": {
+      "type": "string"
+    },
+    "scene_revision": {
+      "type": "integer"
+    },
+    "observation_sequence": {
+      "type": "integer"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "map_ready": {
+      "type": "boolean"
+    },
+    "active_world": {
+      "type": "string"
+    },
+    "robot_pose": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            },
+            "yaw": {
+              "type": "number"
+            },
+            "frame": {
+              "enum": [
+                "three_world"
+              ]
+            },
+            "source": {
+              "enum": [
+                "manual",
+                "physical_odometry",
+                "replay"
+              ]
+            },
+            "telemetry_fresh": {
+              "type": "boolean"
+            },
+            "telemetry_sequence": {
+              "type": "integer"
+            },
+            "telemetry_age_ms": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "joint_source": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Where the avatar's 12 leg joint angles come from this frame: measured LowState telemetry ('telemetry'), the procedural trot ('procedural'), or 'rest'."
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "z",
+            "yaw",
+            "frame",
+            "source",
+            "telemetry_fresh",
+            "telemetry_sequence",
+            "telemetry_age_ms"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "mission_state": {
+      "type": "object",
+      "properties": {
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phase": {
+          "enum": [
+            "IDLE",
+            "RUNNING",
+            "APPROACHING",
+            "INSPECTING",
+            "ACTIVATING",
+            "VERIFYING",
+            "HELD",
+            "VERIFIED"
+          ]
+        },
+        "reported_phase": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "target_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mode": {
+          "enum": [
+            "rehearsal",
+            "telemetry",
+            "replay"
+          ]
+        },
+        "map_armed": {
+          "type": "boolean"
+        },
+        "physical_arming": {
+          "enum": [
+            "local_operator_gate"
+          ]
+        },
+        "verification_scope": {
+          "enum": [
+            "map_semantic_only"
+          ]
+        },
+        "hold_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "run_id",
+        "phase",
+        "reported_phase",
+        "target_id",
+        "mode",
+        "map_armed",
+        "physical_arming",
+        "verification_scope",
+        "hold_reason"
+      ],
+      "additionalProperties": false
+    },
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "scene_object_id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "world_position": {
+            "type": "object",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "z"
+            ],
+            "additionalProperties": false
+          },
+          "distance_from_robot": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bearing": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "visible": {
+            "type": "boolean"
+          },
+          "line_of_sight": {
+            "type": "null"
+          },
+          "interaction_radius": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "interactable": {
+            "type": "boolean"
+          },
+          "object_affordances": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "currently_valid_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "mobility": {
+            "type": "string",
+            "enum": [
+              "static",
+              "animated_in_place",
+              "patrol",
+              "agent",
+              "door"
+            ],
+            "description": "Scene-atlas motion class. animated_in_place and patrol objects are mobile: re-observe before approaching; their position is only valid at observation time."
+          },
+          "sequence_label": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Moontology humanoid reasoning label (H-01..H-08) when this object carries a story beat; null otherwise."
+          },
+          "atlas_role": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Human-readable role from the scene atlas (src/levels/sceneAtlas.ts)."
+          },
+          "expected_position": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              },
+              "z": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "z"
+            ],
+            "description": "Authored placement from the scene atlas, three_world frame; null when the atlas has no placement."
+          },
+          "displacement_from_expected": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "Planar XZ distance (world units) between world_position and expected_position; large values mean the object was re-staged or is patrolling."
+          }
+        },
+        "required": [
+          "id",
+          "scene_object_id",
+          "type",
+          "state",
+          "world_position",
+          "distance_from_robot",
+          "bearing",
+          "visible",
+          "line_of_sight",
+          "interaction_radius",
+          "interactable",
+          "object_affordances",
+          "currently_valid_actions",
+          "mobility",
+          "sequence_label",
+          "atlas_role",
+          "expected_position",
+          "displacement_from_expected"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "layout": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "world": {
+              "type": "string"
+            },
+            "layoutRevision": {
+              "type": "integer"
+            },
+            "obstacleRevision": {
+              "type": "integer"
+            },
+            "source": {
+              "type": "string"
+            },
+            "physicalValidation": {
+              "type": "string"
+            },
+            "unknownAreas": {
+              "type": "string"
+            },
+            "unregisteredSplatFeatures": {
+              "type": "string"
+            },
+            "heightSource": {
+              "type": "string"
+            },
+            "regions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string"
+                  },
+                  "polygon": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "floorY": {
+                    "type": "number"
+                  },
+                  "validActions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "destination": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "label",
+                  "kind",
+                  "polygon",
+                  "validActions"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "robotState": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "position": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      }
+                    },
+                    "regionId": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "blocked": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "physicalHold": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "rejectedTelemetryPose": {
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "position",
+                    "regionId",
+                    "blocked",
+                    "physicalHold",
+                    "rejectedTelemetryPose"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "obstacles": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "polygon": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "validActions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "polygon",
+                  "validActions"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "world",
+            "layoutRevision",
+            "obstacleRevision",
+            "source",
+            "physicalValidation",
+            "unknownAreas",
+            "unregisteredSplatFeatures",
+            "heightSource",
+            "regions",
+            "robotState",
+            "obstacles"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "last_event": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "timestamp"
+      ],
+      "additionalProperties": false
+    },
+    "authoritative_browser": {
+      "type": "object",
+      "properties": {
+        "browser_id": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "browser_id",
+        "url"
+      ],
+      "additionalProperties": false
+    },
+    "spatial_contract": {
+      "type": "object",
+      "properties": {
+        "frame": {
+          "type": "string"
+        },
+        "up": {
+          "type": "string"
+        },
+        "forward_at_zero_yaw": {
+          "type": "string"
+        },
+        "yaw_positive_toward": {
+          "type": "string"
+        },
+        "position_units": {
+          "type": "string"
+        },
+        "meters_to_world_units": {
+          "type": "number"
+        },
+        "distance_units": {
+          "type": "string"
+        },
+        "bearing_units": {
+          "type": "string"
+        },
+        "visible_means": {
+          "type": "string"
+        },
+        "line_of_sight": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "frame",
+        "up",
+        "forward_at_zero_yaw",
+        "yaw_positive_toward",
+        "position_units",
+        "meters_to_world_units",
+        "distance_units",
+        "bearing_units",
+        "visible_means",
+        "line_of_sight"
+      ],
+      "additionalProperties": false
+    },
+    "performance": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "frames": {
+              "type": "number"
+            },
+            "last_frame_ms": {
+              "type": "number"
+            },
+            "max_frame_ms": {
+              "type": "number"
+            },
+            "render_age_ms": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "visible": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "frames",
+            "last_frame_ms",
+            "max_frame_ms",
+            "render_age_ms",
+            "visible"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "scene_session_id",
+    "scene_revision",
+    "observation_sequence",
+    "timestamp",
+    "map_ready",
+    "active_world",
+    "robot_pose",
+    "mission_state",
+    "entities",
+    "layout",
+    "last_event",
+    "authoritative_browser",
+    "spatial_contract"
+  ],
+  "additionalProperties": false
+}

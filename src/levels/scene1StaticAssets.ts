@@ -77,7 +77,9 @@ export const SCENE_1_STATIC_ASSETS = [
   {
     id: 'ROVER-01',
     type: 'rover',
-    src: '/models/static/rover.glb',
+    src: '/models/animated/rover-driving.glb',
+    animation: 'Drive_InPlace',
+    animationSpeed: 0,
     role: 'Surface Support Rover',
     ...EQUIPMENT_STAGING['ROVER-01'],
     scale: [1, 1, 1],
@@ -99,7 +101,7 @@ export const SCENE_1_STATIC_ASSETS = [
   {
     id: 'LOGISTICS-ROVER-01',
     type: 'rover',
-    src: '/models/static/cyber-rover.glb',
+    src: '/models/animated/logistics-rover.glb',
     role: 'Logistics Equipment Staging Rover',
     ...EQUIPMENT_STAGING['LOGISTICS-ROVER-01'],
     scale: [1, 1, 1],
@@ -248,7 +250,7 @@ export const SCENE_1_STATIC_SYSTEMS = {
     leakOriginAssetId: 'Airlock-2A-LeakOrigin',
     closedPosition: [0, 0, 0],
     openPosition: [0, 2.9, 0],
-    moveDurationSeconds: 0.8,
+    moveDurationSeconds: 2.2,
     purgeDurationSeconds: 1.8,
     emergencyFaultHoldSeconds: 0.45,
     emergencyOpenHoldSeconds: 0.75,
