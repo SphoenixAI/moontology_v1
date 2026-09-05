@@ -1,0 +1,105 @@
+{
+  "verification": "full_visible_scene_replay_passed_3_of_3",
+  "physical_transport": "absent",
+  "runs": [
+    {
+      "run": 1,
+      "success": true,
+      "elapsed_seconds": 23.814151332975598,
+      "approach_actions": 44,
+      "distance_start": 12.11981848048889,
+      "distance_at_inspect": 2.799862020920077,
+      "physical_development_travel_m": 0.24790121917538346,
+      "physical_commands_sent": 0,
+      "map_latency_ms": {
+        "max": 1090.1109170226846,
+        "mean": 61.4798757956114
+      },
+      "performance": {
+        "frames": 466,
+        "last_frame_ms": 33.30000000000291,
+        "max_frame_ms": 150.10000000000218,
+        "render_age_ms": 42.89999998807616,
+        "visible": true
+      }
+    },
+    {
+      "run": 2,
+      "success": true,
+      "elapsed_seconds": 24.039211541996337,
+      "approach_actions": 44,
+      "distance_start": 12.11981848048889,
+      "distance_at_inspect": 2.86125249615305,
+      "physical_development_travel_m": 0.2455498960118741,
+      "physical_commands_sent": 0,
+      "map_latency_ms": {
+        "max": 1090.1109170226846,
+        "mean": 45.83064333274149
+      },
+      "performance": {
+        "frames": 480,
+        "last_frame_ms": 33.39999999999418,
+        "max_frame_ms": 215.90000000000146,
+        "render_age_ms": 30.299999988084892,
+        "visible": true
+      }
+    },
+    {
+      "run": 3,
+      "success": true,
+      "elapsed_seconds": 24.01456291700015,
+      "approach_actions": 44,
+      "distance_start": 12.11981848048889,
+      "distance_at_inspect": 2.786808318114671,
+      "physical_development_travel_m": 0.24813162086158988,
+      "physical_commands_sent": 0,
+      "map_latency_ms": {
+        "max": 1090.1109170226846,
+        "mean": 39.111719284288185
+      },
+      "performance": {
+        "frames": 465,
+        "last_frame_ms": 33.39999999999418,
+        "max_frame_ms": 133.39999999999418,
+        "render_age_ms": 21.500000005966285,
+        "visible": true
+      }
+    }
+  ],
+  "tests": {
+    "map_regression": 31,
+    "air_contract": 9,
+    "build": "passed",
+    "lint": "passed"
+  },
+  "note": "Each run used the visible current Moontology scene and completed 44 approach actions followed by inspect, activate and verify. The replay process had no hardware channel. Latency aggregates include earlier preparation calls and are not a sensor-to-display physical latency measurement.",
+  "final_gate": "Physical execution remains unarmed. Physical camera, LiDAR, odometry, calibration and obstacle checks require stationary Go2 connection.",
+  "current_transport": "Vite existing WebSocket, pinned visible presentation browser",
+  "stationary_live": {
+    "air_ip": "192.168.8.160",
+    "go2_ip": "192.168.8.115",
+    "ping_mean_ms": 4.469,
+    "ping_samples": 4,
+    "packet_loss_percent": 0,
+    "real_camera_verified": true,
+    "measured_odometry_to_current_map_verified": true,
+    "observed_map_telemetry_age_ms": [
+      8,
+      38,
+      72
+    ],
+    "physical_movement_tested": false,
+    "locomotion_actions": 0,
+    "armed": false,
+    "blockers": [
+      "frozen_lidar_source_timestamp",
+      "onboard_obstacle_avoidance_disabled",
+      "stationary_obstacle_veto_unverified",
+      "physical_path_planning_absent"
+    ],
+    "evidence": "runtime.local/live-stationary-verification.json"
+  },
+  "current_hardware_hold": "Unexpected repeated avoidance announcements; bridge stopped, automatic setup/polling removed, live reconnection blocked pending robot recovery",
+  "physical_mission_ready": false,
+  "incident_record": "runtime.local/avoidance-incident.json"
+}
