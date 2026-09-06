@@ -12,6 +12,7 @@ import {
 } from 'three';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { clone } from 'three/addons/utils/SkeletonUtils.js';
 import type { AnimationSystem } from '../animation/AnimationSystem';
 import type {
@@ -22,6 +23,7 @@ import type { LevelAssetConfig } from '../levels/types';
 import { MOONTOLOGY_CONFIG } from '../config/moontologyConfig';
 import { AssetRegistry, type LoadedAsset } from './AssetRegistry';
 import { withDownloadTimeout } from './withDownloadTimeout';
+import { publicAssetUrl } from './publicAssetUrl';
 import {
   placeObjectBottomAtY,
   scaleObjectToHeight,
@@ -81,7 +83,7 @@ export interface AssetLoadEvent {
 
 export class AssetLoader {
   private readonly manager = new LoadingManager();
-  private readonly gltfLoader = new GLTFLoader(this.manager);
+  private readonly gltfLoader = new GLTFLoader(this.manager).setMeshoptDecoder(MeshoptDecoder);
   private readonly fbxLoader = new FBXLoader(this.manager);
   private readonly textureLoader = new TextureLoader(this.manager);
   private disposed = false;
@@ -99,6 +101,7 @@ export class AssetLoader {
     humanoidFleet: HumanoidFleet | null = null,
     staticAssetRoot: Group | null = null,
   ) {
+    this.manager.setURLModifier(publicAssetUrl);
     this.assetLayer = assetLayer;
     this.registry = registry;
     this.animations = animations;
@@ -171,6 +174,24 @@ export class AssetLoader {
     }
 
     return results.filter((asset): asset is LoadedAsset => asset !== null);
+  }
+
+  /** Prime a bounded set of shared sources while the environment loads.
+   * Registration and placement still happen in loadAll's original scene order.
+   */
+  async preload(configs: readonly LevelAssetConfig[]): Promise<void> {
+    const sources = [...new Set(configs
+      .filter(config => config.src && !this.getEmergencySkipReason(config))
+      .map(config => config.src!))];
+    let next = 0;
+    const worker = async (): Promise<void> => {
+      while (!this.disposed && next < sources.length) {
+        const source = sources[next++];
+        try { await this.getSource(source); }
+        catch { /* loadAll reports errors and may retry the failed source. */ }
+      }
+    };
+    await Promise.all([worker(), worker()]);
   }
 
   async load(config: LevelAssetConfig): Promise<LoadedAsset | null> {

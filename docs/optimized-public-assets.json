@@ -1,0 +1,151 @@
+{
+  "store": "moontology-assets",
+  "storeId": "store_w1Q22HcAFGF7ppYH",
+  "assets": [
+    {
+      "path": "optimized/models/humanoids/full-detail-glb/Dig And Plant Seeds.glb",
+      "route": "models/humanoids/full-detail-glb/Dig And Plant Seeds.glb",
+      "bytes": 44626800,
+      "sha256": "3c7e3d01743e112232a518bd55e4235fe163ef2c8b2d2c5d2865fcedded6048c",
+      "sourceSha256": "fea5ba7269be5cdefc7f53cb24cf54820dac77c06fb73b24a8016b7c56cf8c63",
+      "sourceBytes": 108343140,
+      "compressedViews": 39,
+      "animationClips": [
+        "Armature|mixamo.com|Layer0"
+      ],
+      "verifiedBuffers": 111,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/3c7e3d01743e1122/optimized/models/humanoids/full-detail-glb/Dig%20And%20Plant%20Seeds.glb",
+      "pathname": "v2/3c7e3d01743e1122/optimized/models/humanoids/full-detail-glb/Dig And Plant Seeds.glb",
+      "verifiedAt": "2026-09-06T00:53:11.706Z"
+    },
+    {
+      "path": "optimized/models/humanoids/full-detail-glb/Shared Worker Actions.glb",
+      "route": "models/humanoids/full-detail-glb/Shared Worker Actions.glb",
+      "bytes": 45080152,
+      "sha256": "c0b0e5578a20430ab13407828ff7f1f54707d402ce915995e9c355a4b288f7d4",
+      "sourceSha256": "d74c99d43663badf31e780bba69fef4b00e76b67282ea9d36c47bd5d1afe80ad",
+      "sourceBytes": 108615560,
+      "compressedViews": 122,
+      "animationClips": [
+        "Writing",
+        "Kneeling Inspecting",
+        "h01-sweat",
+        "Defeat"
+      ],
+      "verifiedBuffers": 603,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/c0b0e5578a20430a/optimized/models/humanoids/full-detail-glb/Shared%20Worker%20Actions.glb",
+      "pathname": "v2/c0b0e5578a20430a/optimized/models/humanoids/full-detail-glb/Shared Worker Actions.glb",
+      "verifiedAt": "2026-09-06T00:53:21.619Z"
+    },
+    {
+      "path": "optimized/models/animated/rover-driving.glb",
+      "route": "models/animated/rover-driving.glb",
+      "bytes": 26473368,
+      "sha256": "5d67baf7be75215ca3280db926360c275f7531115c647dbb082eb82776a04396",
+      "sourceSha256": "f57455c717f08cf255b89b3e03d16b27b1d4abe90eb3144f6110652acd4b7698",
+      "sourceBytes": 57286996,
+      "compressedViews": 30,
+      "animationClips": [
+        "Drive_Forward",
+        "Drive_InPlace"
+      ],
+      "verifiedBuffers": 33,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/5d67baf7be75215c/optimized/models/animated/rover-driving.glb",
+      "pathname": "v2/5d67baf7be75215c/optimized/models/animated/rover-driving.glb",
+      "verifiedAt": "2026-09-06T00:53:26.562Z"
+    },
+    {
+      "path": "optimized/models/animated/logistics-rover.glb",
+      "route": "models/animated/logistics-rover.glb",
+      "bytes": 1387176,
+      "sha256": "e49d73aad2a4da51ca4e92057a5106c746acbbbd1b0a1a34603453625622d896",
+      "sourceSha256": "fbcd7e986a2b11ca2f9e3f633fc97da988d1d953a5296917da90395a13d14c2b",
+      "sourceBytes": 1652428,
+      "compressedViews": 28,
+      "animationClips": [],
+      "verifiedBuffers": 31,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/e49d73aad2a4da51/optimized/models/animated/logistics-rover.glb",
+      "pathname": "v2/e49d73aad2a4da51/optimized/models/animated/logistics-rover.glb",
+      "verifiedAt": "2026-09-06T00:53:27.948Z"
+    },
+    {
+      "path": "optimized/models/rovers/lunar excavator.glb",
+      "route": "models/rovers/lunar excavator.glb",
+      "bytes": 27312496,
+      "sha256": "98432aff5542be9b95867dcd5a2506c59a2e44032b144f49742749164f0ad01b",
+      "sourceSha256": "135a7de70adc41210bd2bdc97b273a348d8810abbc6d8ff8057b8f21e3ae7579",
+      "sourceBytes": 59374908,
+      "compressedViews": 4,
+      "animationClips": [],
+      "verifiedBuffers": 7,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/98432aff5542be9b/optimized/models/rovers/lunar%20excavator.glb",
+      "pathname": "v2/98432aff5542be9b/optimized/models/rovers/lunar excavator.glb",
+      "verifiedAt": "2026-09-06T00:53:32.813Z"
+    },
+    {
+      "path": "optimized/models/static/excavator traditional.glb",
+      "route": "models/static/excavator traditional.glb",
+      "bytes": 26353592,
+      "sha256": "e5254aa5e9e7738d6c361059735db8ee1a0f99444b49da70c7b8590ccdc1e358",
+      "sourceSha256": "0dadb6f36264d1189946a0301ecf659f67cd643d25efb46704f78a847cec6535",
+      "sourceBytes": 57833524,
+      "compressedViews": 4,
+      "animationClips": [],
+      "verifiedBuffers": 7,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/e5254aa5e9e7738d/optimized/models/static/excavator%20traditional.glb",
+      "pathname": "v2/e5254aa5e9e7738d/optimized/models/static/excavator traditional.glb",
+      "verifiedAt": "2026-09-06T00:53:45.014Z"
+    },
+    {
+      "path": "optimized/models/static/cable.glb",
+      "route": "models/static/cable.glb",
+      "bytes": 26634952,
+      "sha256": "a8a98cda9cd05f1dbdcf09953b79f54f34525bcdd33e1793fc981d96aa7c4c74",
+      "sourceSha256": "6b956175be0d910a4c8192c2e6b6e4c4c26ef28eac9a39a96f08c785ae30d0d4",
+      "sourceBytes": 58929372,
+      "compressedViews": 4,
+      "animationClips": [],
+      "verifiedBuffers": 7,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/a8a98cda9cd05f1d/optimized/models/static/cable.glb",
+      "pathname": "v2/a8a98cda9cd05f1d/optimized/models/static/cable.glb",
+      "verifiedAt": "2026-09-06T00:53:58.989Z"
+    },
+    {
+      "path": "optimized/worldlabs/lunar-base/Moon Base with Habitats_collider.glb",
+      "route": "worldlabs/lunar-base/Moon Base with Habitats_collider.glb",
+      "bytes": 1313064,
+      "sha256": "1ed342938e0e9eb4296192fa872f8e7588fe2bc4bccb09803944215ee50267ad",
+      "sourceSha256": "d6c818b1d43af12f4c6958e39bdcc4c317ec741f6705663c04443e6bb888c41c",
+      "sourceBytes": 2029808,
+      "compressedViews": 4,
+      "animationClips": [],
+      "verifiedBuffers": 4,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/1ed342938e0e9eb4/optimized/worldlabs/lunar-base/Moon%20Base%20with%20Habitats_collider.glb",
+      "pathname": "v2/1ed342938e0e9eb4/optimized/worldlabs/lunar-base/Moon Base with Habitats_collider.glb",
+      "verifiedAt": "2026-09-06T00:54:02.991Z"
+    },
+    {
+      "path": "optimized/worldlabs/scene-2/Futuristic Museum Interiors_collider.glb",
+      "route": "worldlabs/scene-2/Futuristic Museum Interiors_collider.glb",
+      "bytes": 1118372,
+      "sha256": "00f70f598ba3e1e684ca4e0fdd723c5e449501378e64a2641709eb953e6ea00d",
+      "sourceSha256": "e9315c4e10794157e426b9e1930ba92cd2f12ec45befbb3113a26a0a2db1605c",
+      "sourceBytes": 1634708,
+      "compressedViews": 4,
+      "animationClips": [],
+      "verifiedBuffers": 4,
+      "textureBytesUnchanged": true,
+      "url": "https://w1q22hcafgf7ppyh.public.blob.vercel-storage.com/v2/00f70f598ba3e1e6/optimized/worldlabs/scene-2/Futuristic%20Museum%20Interiors_collider.glb",
+      "pathname": "v2/00f70f598ba3e1e6/optimized/worldlabs/scene-2/Futuristic Museum Interiors_collider.glb",
+      "verifiedAt": "2026-09-06T00:54:04.965Z"
+    }
+  ]
+}

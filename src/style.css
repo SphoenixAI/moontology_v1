@@ -320,3 +320,21 @@ input {
 .scene-rehearsal-panel .dock-panel__body { padding: 12px; overflow: auto; }
 .scene-rehearsal-panel p { font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
 .scene-rehearsal-panel button { margin: 3px; }
+
+.mobile-render-notice { position: fixed; z-index: 10000; inset: 35% 16px auto; padding: 24px; text-align: center; color: #e6e2da; }
+.mobile-render-notice button { color: inherit; background: #303030; border: 1px solid #8b8273; border-radius: 8px; padding: 12px 20px; }
+.mobile-movement-pad { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; }
+.mobile-movement-pad button { flex: 1; height: 44px; touch-action: none; user-select: none; border: 1px solid var(--glass-panel-border); background: var(--glass-control-bg); border-radius: 9px; color: var(--glass-text); font-size: 24px; }
+.mobile-movement-pad button:active { background: var(--glass-control-selected); }
+@media (max-width: 700px) {
+  #app[data-quality='mobile'] .dock-panel__docks { display: none; }
+  #app[data-quality='mobile'] .ops-intelligence { top: 68px !important; left: 12px !important; right: auto !important; width: calc(100vw - 24px); height: min(65dvh, 620px) !important; }
+  #app[data-quality='mobile'] .ops-intelligence--collapsed { width: 74px; height: auto !important; }
+  #app[data-quality='mobile'] .ops-intelligence--collapsed .ops-rail__mission,
+  #app[data-quality='mobile'] .ops-intelligence--collapsed .ops-rail__metric { display: none; }
+  #app[data-quality='mobile'] .ops-rail { display: block; min-height: 0; padding: 8px; }
+  #app[data-quality='mobile'] .ops-rail__mark { display: none; }
+  #app[data-quality='mobile'] .scene-rehearsal-panel { top: 68px !important; left: 98px !important; right: auto !important; width: calc(100vw - 110px); max-height: 60dvh; }
+  #app[data-quality='mobile'] .moon-control-switcher { bottom: max(12px, env(safe-area-inset-bottom)) !important; top: auto !important; right: 12px !important; left: auto !important; width: 260px; }
+  #app[data-quality='mobile'] .project-links { top: max(12px, env(safe-area-inset-top)); right: 12px; }
+}

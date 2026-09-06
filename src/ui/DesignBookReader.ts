@@ -1,3 +1,4 @@
+import { MOBILE } from '../runtime/deviceProfile';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy, type RenderTask } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
@@ -80,7 +81,9 @@ export class DesignBookReader {
       const base = page.getViewport({ scale: 1 });
       const width = Math.max(200, this.viewport.clientWidth - 40);
       const viewport = page.getViewport({ scale: width / base.width * this.zoom });
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const ratio = MOBILE
+        ? Math.min(1, Math.sqrt(2_000_000 / (viewport.width * viewport.height)))
+        : Math.min(window.devicePixelRatio || 1, 2);
       this.canvas.width = Math.floor(viewport.width * ratio);
       this.canvas.height = Math.floor(viewport.height * ratio);
       this.canvas.style.width = `${viewport.width}px`;
@@ -99,6 +102,7 @@ export class DesignBookReader {
   dispose(): void {
     this.disposed = true; this.generation++;
     this.resize.disconnect(); this.renderTask?.cancel();
-    void this.loading.destroy(); this.host.replaceChildren();
+    this.canvas.width = 0; this.canvas.height = 0;
+    void this.loading.destroy(); this.pdf = null; this.host.replaceChildren();
   }
 }

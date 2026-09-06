@@ -1,3 +1,4 @@
+import { MOBILE } from '../runtime/deviceProfile';
 import { Go2FollowCamera } from './Go2FollowCamera';
 import {
   PerspectiveCamera,
@@ -96,6 +97,25 @@ export class MoonControlSystem {
       this.keyboardButton.title = 'Virtual map only. Physical motion remains disarmed.';
       this.dock.body.append(this.keyboardStatus, this.keyboardButton);
       this.keyboardButton.addEventListener('click', this.activateKeyboardDemo);
+      if (MOBILE && import.meta.env.MODE === 'public') {
+        const pad = document.createElement('div');
+        pad.className = 'mobile-movement-pad';
+        for (const [code, label, symbol] of [
+          ['ArrowLeft', 'Turn Go2 left', '↶'], ['ArrowUp', 'Move Go2 forward', '↑'],
+          ['ArrowDown', 'Move Go2 backward', '↓'], ['ArrowRight', 'Turn Go2 right', '↷'],
+        ]) {
+          const button = document.createElement('button');
+          button.type = 'button'; button.textContent = symbol; button.setAttribute('aria-label', label);
+          button.onpointerdown = event => {
+            event.preventDefault(); button.setPointerCapture(event.pointerId);
+            this.robotController.setTouchInput(code, true);
+          };
+          const release = () => this.robotController.setTouchInput(code, false);
+          button.onpointerup = release; button.onpointercancel = release; button.onlostpointercapture = release;
+          pad.append(button);
+        }
+        this.dock.body.append(pad);
+      }
 
       this.robotButton.addEventListener('click', this.activateRobot);
       this.cameraButton.addEventListener('click', this.activateCamera);
@@ -114,7 +134,7 @@ export class MoonControlSystem {
   setKeyboardBlock(reason: string | null, canReturnToDemo: boolean): void {
     if (reason !== this.keyboardBlock) {
       this.keyboardBlock = reason;
-      this.keyboardStatus.textContent = reason ?? 'Arrow keys / WASD: move and turn in Follow Go2.';
+      this.keyboardStatus.textContent = reason ?? (MOBILE && import.meta.env.MODE === 'public' ? 'Hold arrows to walk · Free Camera to explore.' : 'Arrow keys / WASD: move and turn in Follow Go2.');
     }
     this.keyboardButton.hidden = !canReturnToDemo || !this.requestKeyboardDemo;
   }

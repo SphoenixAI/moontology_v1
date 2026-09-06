@@ -4,12 +4,20 @@ import { URL } from 'node:url';
 
 const { assets } = JSON.parse(await readFile('dist-public/map-assets-manifest.json', 'utf8'));
 const { assets: receipts } = JSON.parse(await readFile('docs/public-assets.json', 'utf8'));
+const { assets: optimized } = JSON.parse(await readFile('docs/optimized-public-assets.json', 'utf8'));
+const { assets: optimizedBuild } = JSON.parse(await readFile('docs/optimized-assets.json', 'utf8'));
 const routes = [];
 for (const asset of assets) {
-  const receipt = receipts.find((entry) => entry.path === asset.path);
-  if (!receipt || receipt.sha256 !== asset.sha256 || receipt.bytes !== asset.bytes) {
+  const original = receipts.find((entry) => entry.path === asset.path);
+  if (!original || original.sha256 !== asset.sha256 || original.bytes !== asset.bytes) {
     throw new Error(`Missing matching upload receipt: ${asset.path}`);
   }
+  const candidate = optimized.find(entry => entry.route === asset.path);
+  const build = optimizedBuild.find(entry => entry.route === asset.path);
+  if (build && (!candidate || candidate.sha256 !== build.sha256 || candidate.bytes !== build.bytes || candidate.sourceSha256 !== asset.sha256)) {
+    throw new Error(`Missing verified optimized upload: ${asset.path}`);
+  }
+  const receipt = candidate ?? original;
   const url = new URL(receipt.url);
   if (url.protocol !== 'https:' || !url.hostname.endsWith('.public.blob.vercel-storage.com')) {
     throw new Error(`Invalid public asset URL: ${asset.path}`);

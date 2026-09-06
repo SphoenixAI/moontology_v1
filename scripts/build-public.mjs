@@ -2,13 +2,42 @@ import { build } from 'vite';
 import { cp, mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import console from 'node:console';
+import { URL } from 'node:url';
+
+const uploads = JSON.parse(await readFile('docs/public-assets.json', 'utf8'));
+const optimizedUploads = JSON.parse(await readFile('docs/optimized-public-assets.json', 'utf8'));
+const optimizedBuild = JSON.parse(await readFile('docs/optimized-assets.json', 'utf8'));
+const publicAssetUrls = Object.fromEntries(uploads.assets.map(asset => [`/${asset.path}`, asset.url]));
+for (const asset of optimizedBuild.assets) {
+  const uploaded = optimizedUploads.assets.find(entry => entry.path === asset.path && entry.sha256 === asset.sha256);
+  if (!uploaded) throw new Error(`Missing optimized upload: ${asset.path}`);
+  publicAssetUrls[`/${asset.route}`] = uploaded.url;
+}
+const mobileBuild = JSON.parse(await readFile('docs/mobile-assets.json', 'utf8'));
+const mobileUploads = JSON.parse(await readFile('docs/mobile-public-assets.json', 'utf8'));
+const mobileAssetUrls = {};
+for (const asset of mobileBuild.assets) {
+  const uploaded = mobileUploads.assets.find(entry => entry.path === asset.path && entry.sha256 === asset.sha256 && entry.bytes === asset.bytes);
+  if (!uploaded) throw new Error(`Missing mobile upload: ${asset.path}`);
+  mobileAssetUrls[`/${asset.route}`] = uploaded.url;
+}
+const blobOrigin = new URL(uploads.assets[0].url).origin;
 
 // Separate output: the local presentation and its full source assets stay intact.
-await build({ mode: 'public', build: { outDir: 'dist-public', copyPublicDir: false } });
+await build({ mode: 'public', define: { __MOONTOLOGY_PUBLIC_ASSET_URLS__: JSON.stringify(publicAssetUrls), __MOONTOLOGY_MOBILE_ASSET_URLS__: JSON.stringify(mobileAssetUrls) },
+  build: { outDir: 'dist-public', copyPublicDir: false } });
+const html = await readFile('dist-public/index.html', 'utf8');
+await writeFile('dist-public/index.html', html.replace('</head>',
+  `<link rel="preconnect" href="${blobOrigin}" crossorigin>\n</head>`));
 await mkdir('dist-public/docs', { recursive: true });
 await cp('public/docs/moontology-design-provenance.pdf', 'dist-public/docs/moontology-design-provenance.pdf');
 await mkdir('dist-public/models', { recursive: true });
-await cp('public/models/go2', 'dist-public/models/go2', { recursive: true });
+// The URDF references /dae only. /meshes is an identical, unused second copy.
+for (const path of ['OFFICIAL_SOURCE.md', 'go2_description/urdf/go2_description.urdf', 'go2_description/dae']) {
+  const target = `dist-public/models/go2/${path}`;
+  await mkdir(target.substring(0, target.lastIndexOf('/')), { recursive: true });
+  await cp(`public/models/go2/${path}`, target, { recursive: true });
+}
 
 // These exact, unmodified large files must be hosted before publishing the site.
 const files = [

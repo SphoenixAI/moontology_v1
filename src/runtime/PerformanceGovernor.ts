@@ -1,3 +1,4 @@
+import { MOBILE, mobileBudget } from './deviceProfile';
 import type { PerspectiveCamera, WebGLRenderer } from 'three';
 import {
   MOONTOLOGY_CONFIG,
@@ -19,6 +20,7 @@ export class PerformanceGovernor {
   private readonly renderer: WebGLRenderer;
   private readonly camera: PerspectiveCamera;
   private mode: PerformanceMode = MOONTOLOGY_CONFIG.performance.mode;
+  private suspended = false;
   private visible = !document.hidden;
   private lastFrameTime = 0;
   private started = false;
@@ -32,6 +34,8 @@ export class PerformanceGovernor {
     window.addEventListener('keydown', this.handleKeyDown);
     document.addEventListener('visibilitychange', this.handleVisibility);
   }
+
+  setSuspended(suspended: boolean): void { this.suspended = suspended; this.lastFrameTime = 0; }
 
   get currentMode(): PerformanceMode {
     return this.mode;
@@ -90,10 +94,8 @@ export class PerformanceGovernor {
       return false;
     }
 
-    const targetFps =
-      this.mode === PerformanceModes.DEV
-        ? MOONTOLOGY_CONFIG.performance.devFPS
-        : MOONTOLOGY_CONFIG.performance.demoFPS;
+    if (this.suspended) return false;
+    const targetFps = this.targetFps;
     const frameInterval = 1000 / targetFps;
     const elapsed = time - this.lastFrameTime;
     if (this.lastFrameTime !== 0 && elapsed < frameInterval) {
@@ -105,7 +107,7 @@ export class PerformanceGovernor {
   }
 
   private applyMode(): void {
-    const pixelRatio = (window.devicePixelRatio || 1);
+    const pixelRatio = (MOBILE ? mobileBudget.pixelRatio : window.devicePixelRatio || 1);
 
     this.renderer.setPixelRatio(pixelRatio);
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
@@ -118,6 +120,7 @@ export class PerformanceGovernor {
   }
 
   private get targetFps(): number {
+    if (MOBILE) return mobileBudget.fps;
     return this.mode === PerformanceModes.DEV
       ? MOONTOLOGY_CONFIG.performance.devFPS
       : MOONTOLOGY_CONFIG.performance.demoFPS;
@@ -126,7 +129,7 @@ export class PerformanceGovernor {
   private readonly resize = (): void => {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
-    this.renderer.setPixelRatio((window.devicePixelRatio || 1));
+    this.renderer.setPixelRatio((MOBILE ? mobileBudget.pixelRatio : window.devicePixelRatio || 1));
     this.renderer.setSize(window.innerWidth, window.innerHeight, false);
   };
 

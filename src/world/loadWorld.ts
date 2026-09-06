@@ -1,3 +1,4 @@
+import { MOBILE, mobileBudget } from '../runtime/deviceProfile';
 import { WorldLayout } from './WorldLayout';
 import type {
   SparkRenderer as SparkRendererInstance,
@@ -13,12 +14,14 @@ import {
   type Timer,
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import type { WorldConfig, WorldMode } from '../levels/types';
 import { createCriticalGameplayColliders } from './createCriticalGameplayColliders';
 import {
   createPlaceholderWorld,
 } from './placeholderWorld';
 import { MOONTOLOGY_CONFIG } from '../config/moontologyConfig';
+import { publicAssetUrl } from '../assets/publicAssetUrl';
 
 export interface WorldHandle {
   layout: WorldLayout | null;
@@ -148,29 +151,31 @@ export const loadWorld = async ({
       url: config.visualSrc,
     });
     try {
-      const probe = await assertResourceAvailable(config.visualSrc);
+      const [probe, { SparkRenderer, SplatMesh }] = await Promise.all([
+        assertResourceAvailable(publicAssetUrl(config.visualSrc)),
+        import('@sparkjsdev/spark'),
+      ]);
       console.info('[WorldLabs] splat resource available', {
         url: config.visualSrc,
         contentLength: probe.contentLength,
         contentType: probe.contentType,
       });
-      const { SparkRenderer, SplatMesh } = await import(
-        '@sparkjsdev/spark'
-      );
       const sharedSparkClock = {
         getElapsedTime: () => timer.getElapsed(),
       } as Clock;
       sparkRenderer = new SparkRenderer({
         renderer,
         clock: sharedSparkClock,
+        ...(MOBILE ? { lodSplatCount: mobileBudget.renderSplats, maxPagedSplats: mobileBudget.pagedSplats, numLodFetchers: 1, lodRenderScale: 1.5 } : {}),
       });
       sparkRenderer.name = 'spark-renderer';
       scene.add(sparkRenderer);
 
-      const isRadLodFile = /\.rad(?:$|\?)/i.test(config.visualSrc);
+      const isRadLodFile = /\.rad(?:$|\?)/i.test(publicAssetUrl(config.visualSrc));
       splat = new SplatMesh({
-        url: config.visualSrc,
+        url: publicAssetUrl(config.visualSrc),
         onProgress,
+        paged: isRadLodFile,
         lod: isRadLodFile ? undefined : true,
         raycastable: false,
       });
@@ -214,7 +219,7 @@ export const loadWorld = async ({
     });
     try {
       const probe = await withTimeout(
-        assertResourceAvailable(config.colliderSrc),
+        assertResourceAvailable(publicAssetUrl(config.colliderSrc)),
         colliderTimeoutMs,
         `World Labs collider resource check timed out for "${config.colliderSrc}"`,
       );
@@ -224,7 +229,7 @@ export const loadWorld = async ({
         contentType: probe.contentType,
       });
       const gltf = await withTimeout(
-        new GLTFLoader().loadAsync(config.colliderSrc),
+        new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(publicAssetUrl(config.colliderSrc)),
         colliderTimeoutMs,
         `World Labs collider initialization timed out for "${config.colliderSrc}"`,
       );

@@ -1,3 +1,4 @@
+import { MOBILE } from './runtime/deviceProfile';
 import { ASSET_STANDOFF_RADII, REGION_STANDOFF_RADII, approachPlan, planStandoffDetailed, regionCentroid } from './relay/approach';
 import { connectLiveMapRelay } from './relay/LiveMapRelay';
 import { SceneGrounding } from './world/SceneGrounding';
@@ -119,7 +120,8 @@ if (!canvas || !operationsHost || !debugHost) {
 }
 
 let designBookOpen = false;
-const projectLinks = new ProjectLinks(app, open => { designBookOpen = open; });
+let webglLost = false;
+const projectLinks = new ProjectLinks(app, open => { designBookOpen = open; if (MOBILE) performanceGovernor.setSuspended(open || webglLost); });
 
 const statusDock = DEBUG_UI
   ? new DockablePanel({
@@ -199,13 +201,31 @@ camera.position.set(13, 10, 17);
 
 const renderer = new WebGLRenderer({
   canvas,
-  antialias: true,
+  antialias: !MOBILE,
   powerPreference: 'high-performance',
 });
 renderer.outputColorSpace = SRGBColorSpace;
 renderer.toneMapping = ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.08;
 const performanceGovernor = new PerformanceGovernor(renderer, camera);
+canvas.dataset.quality = MOBILE ? 'mobile' : 'full';
+app.dataset.quality = canvas.dataset.quality;
+canvas.dataset.pixelRatio = String(renderer.getPixelRatio());
+// Do not attempt an automatic reload loop if the OS revokes this GPU context.
+if (MOBILE && import.meta.env.MODE === 'public') {
+  canvas.addEventListener('webglcontextlost', event => {
+    event.preventDefault();
+    webglLost = true;
+    performanceGovernor.setSuspended(true);
+    go2Controller?.setExternalControlActive(true);
+    const notice = document.createElement('div');
+    notice.className = 'mobile-render-notice glass-surface';
+    notice.setAttribute('role', 'alert');
+    notice.innerHTML = '<p>The browser paused the 3D map.</p><button type="button">Reload map</button>';
+    notice.querySelector('button')!.onclick = () => location.reload();
+    app.append(notice);
+  }, { once: true });
+}
 
 const orbitControls = new OrbitControls(camera, canvas);
 orbitControls.enableDamping = true;
@@ -367,6 +387,7 @@ const renderLoopStarted = performanceGovernor.start((time) => {
     frameMetrics.max_frame_ms = Math.max(frameMetrics.max_frame_ms, frameMetrics.last_frame_ms);
   }
   previousFrameTime = time; frameMetrics.frames++;
+  if (frameMetrics.frames % 30 === 0) canvas.dataset.renderedFrames = String(frameMetrics.frames);
   timer.update(time);
   const deltaSeconds = Math.min(timer.getDelta(), 0.1);
 
@@ -573,6 +594,9 @@ const bootstrap = async (): Promise<void> => {
   }
 
   const bootstrapWorld = startInScene2 ? SCENE_2_WORLD : level1.world;
+  // Public assets download alongside the world, with at most two source decodes.
+  // Local presentation registration and loading order remain unchanged.
+  if (import.meta.env.MODE === 'public' && !MOBILE) void assetLoader.preload(level1.assets);
   status.textContent =
     bootstrapWorld.mode === 'marble'
       ? startInScene2
@@ -610,6 +634,7 @@ const bootstrap = async (): Promise<void> => {
     colliderAvailable: world.colliderAvailable,
     fallbackReason: world.fallbackReason,
   });
+  canvas.dataset.worldReadyMs = String(Math.round(performance.now()));
 
   if (developmentToolsEnabled) {
     placementPanel = new PlacementPanel(
@@ -898,6 +923,8 @@ const bootstrap = async (): Promise<void> => {
     }
   }
   syncOntologySelection();
+  canvas.dataset.sceneReadyMs = String(Math.round(performance.now()));
+  canvas.dataset.assetCount = String(registry.size);
   if (!statusDock && !go2LoadError) status.hidden = true;
 
   if (go2LoadError) {

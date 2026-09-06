@@ -91,6 +91,18 @@ try {
   const locked = f.robot.position.clone(); controller.update(.1, target);
   controller.setExternalControlActive(false); controller.update(.1, target);
   assert.ok(f.robot.position.equals(locked), 'Physical ownership clears held keys and never auto-resumes');
+  controller.setTouchInput('ArrowUp', true); controller.update(.1, target);
+  assert.ok(f.robot.position.distanceTo(locked) > .07, 'Touch pad moves through the same virtual controller');
+  controller.setTouchInput('ArrowUp', false);
+  const touchReleased = f.robot.position.clone(); controller.update(.1, target);
+  assert.ok(f.robot.position.equals(touchReleased), 'Touch release stops movement');
+  controller.setTouchInput('ArrowUp', true); controller.setExternalControlActive(true);
+  controller.update(.1, target); controller.setExternalControlActive(false); controller.update(.1, target);
+  assert.ok(f.robot.position.equals(touchReleased), 'Ownership change clears touch input without auto-resume');
+  controller.setEnabled(false); controller.setTouchInput('ArrowUp', true); controller.setEnabled(true); controller.update(.1, target);
+  assert.ok(f.robot.position.equals(touchReleased), 'Touch while camera mode is active cannot queue later motion');
+  controller.setTouchInput('ArrowUp', true); globalThis.window.dispatchEvent(new globalThis.Event('blur')); controller.update(.1, target);
+  assert.ok(f.robot.position.equals(touchReleased), 'Blur cancels touch input');
   controller.dispose();
   console.log('PASS: explicit keyboard handoff, preserved safety gates, arrow controls and follow camera; no hardware connections.');
 } finally { await server.close(); await rm(cacheDir, { recursive: true, force: true }); }

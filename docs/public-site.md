@@ -12,6 +12,12 @@ the Vercel CLI and the Build Output API. The GitHub repository remains private;
 Vercel could not attach its Git integration, so automatic deployment from main is
 not connected. The GitHub link is usable by viewers who have repository access.
 
+## Mobile and loading optimization
+
+The September 6 release adds automatic mobile assets, streamed worlds and bounded
+rendering, plus lossless desktop compression. See [mobile-performance.md](mobile-performance.md)
+for budgets, quality differences and verification. Original sources remain intact.
+
 ## Public build
 
 Run `npm run build:public`. This writes a separate `dist-public/` directory and
@@ -34,7 +40,7 @@ The user explicitly approved public asset upload on September 5, 2026.
 SHA-256 hashes. The original files total 547,775,841 bytes. Their URLs include
 source hash prefixes, so updates cannot overwrite an earlier source version.
 
-The site redirects each existing model/world URL to its verified Blob URL.
+The public loader uses direct verified Blob URLs, with redirects retained for existing model/world paths.
 The official Go2 files and PDF remain in the static deployment. This keeps the
 static package within the current Hobby deployment limit without reducing mesh
 detail, embedded texture resolution, or animation clips.
@@ -66,7 +72,7 @@ Original FBX/GLB sources and all embedded texture pixels stay unchanged. No
 physical controller, calibration, STOP behavior, or physical motion is changed
 by publication.
 
-## Verified production release
+## Previous full-detail production baseline
 
 Deployment `dpl_Cp5wtJrg5iFFNT7zpUL9kaEzsJxk` reached `READY`, with the canonical
 domain assigned to `https://moontology.vercel.app`. Its immutable deployment URL

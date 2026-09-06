@@ -16,6 +16,7 @@ const movementKeys = new Set([
 
 export class ManualGo2Controller implements Go2Controller {
   private readonly pressed = new Set<string>();
+  private readonly touchPressed = new Set<string>();
   private readonly pendingTaps = new Set<string>();
   private readonly moveSpeed: number;
   private readonly turnSpeed: number;
@@ -37,7 +38,7 @@ export class ManualGo2Controller implements Go2Controller {
 
     // Keep a short tap until the next frame; keydown + keyup can both arrive
     // between frames while the large map is rendering.
-    const active = (code: string) => this.pressed.has(code) || this.pendingTaps.has(code);
+    const active = (code: string) => this.pressed.has(code) || this.touchPressed.has(code) || this.pendingTaps.has(code);
     const moveInput = Number(active('ArrowUp') || active('KeyW')) -
       Number(active('ArrowDown') || active('KeyS'));
     const turnInput = Number(active('ArrowLeft') || active('KeyA')) -
@@ -50,6 +51,13 @@ export class ManualGo2Controller implements Go2Controller {
     if (moveInput !== 0) {
       target.moveForward(moveInput * this.moveSpeed * deltaSeconds);
     }
+  }
+
+  setTouchInput(code: string, down: boolean): void {
+    if (!down) { this.touchPressed.delete(code); return; }
+    if (!this.enabled || this.externalControlActive || !code.startsWith('Arrow') || !movementKeys.has(code)) return;
+    this.touchPressed.add(code);
+    this.pendingTaps.add(code);
   }
 
   setEnabled(enabled: boolean): void {
@@ -98,6 +106,7 @@ export class ManualGo2Controller implements Go2Controller {
 
   private readonly clear = (): void => {
     this.pressed.clear();
+    this.touchPressed.clear();
     this.pendingTaps.clear();
   };
 
