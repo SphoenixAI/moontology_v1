@@ -76,6 +76,12 @@ input {
   gap: 8px;
 }
 
+.moon-control-switcher__keyboard-status {
+  margin: 9px 4px 7px;
+  color: var(--glass-text-secondary);
+  font: 0.65rem/1.45 system-ui, sans-serif;
+}
+
 .moon-control-switcher button {
   padding: 9px 12px;
   cursor: pointer;

@@ -23,6 +23,7 @@ interface MoonControlSystemOptions {
   orbitControls: OrbitControls;
   robotController: ManualGo2Controller;
   placementController: PlacementController | null;
+  requestKeyboardDemo?: () => string | null;
 }
 
 export class MoonControlSystem {
@@ -32,6 +33,10 @@ export class MoonControlSystem {
   private readonly mapButton: HTMLButtonElement | null;
   private readonly recenterButton = this.createButton('RECENTER');
   private readonly modeValue = document.createElement('span');
+  private readonly keyboardStatus = document.createElement('p');
+  private readonly keyboardButton = this.createButton('USE KEYBOARD DEMO');
+  private readonly requestKeyboardDemo?: () => string | null;
+  private keyboardBlock: string | null | undefined;
   private readonly camera: PerspectiveCamera;
   private readonly go2Root: Object3D;
   private readonly orbitControls: OrbitControls;
@@ -48,6 +53,7 @@ export class MoonControlSystem {
     orbitControls,
     robotController,
     placementController,
+    requestKeyboardDemo,
   }: MoonControlSystemOptions) {
     this.camera = camera;
     this.followCamera = new Go2FollowCamera(camera, go2Root);
@@ -55,6 +61,8 @@ export class MoonControlSystem {
     this.orbitControls = orbitControls;
     this.robotController = robotController;
     this.placementController = placementController;
+    this.requestKeyboardDemo = requestKeyboardDemo;
+    if (this.orbitControls.domElement) this.orbitControls.domElement.tabIndex = 0;
     this.mapButton = placementController
       ? this.createButton('MAP EDIT')
       : null;
@@ -82,6 +90,12 @@ export class MoonControlSystem {
         buttons.append(this.mapButton, this.recenterButton);
       }
       this.dock.body.append(modeRow, buttons);
+      this.keyboardStatus.className = 'moon-control-switcher__keyboard-status';
+      this.keyboardStatus.setAttribute('role', 'status');
+      this.keyboardButton.hidden = true;
+      this.keyboardButton.title = 'Virtual map only. Physical motion remains disarmed.';
+      this.dock.body.append(this.keyboardStatus, this.keyboardButton);
+      this.keyboardButton.addEventListener('click', this.activateKeyboardDemo);
 
       this.robotButton.addEventListener('click', this.activateRobot);
       this.cameraButton.addEventListener('click', this.activateCamera);
@@ -94,6 +108,15 @@ export class MoonControlSystem {
     }
 
     this.setMode(this.mode);
+    this.setKeyboardBlock(null, false);
+  }
+
+  setKeyboardBlock(reason: string | null, canReturnToDemo: boolean): void {
+    if (reason !== this.keyboardBlock) {
+      this.keyboardBlock = reason;
+      this.keyboardStatus.textContent = reason ?? 'Arrow keys / WASD: move and turn in Follow Go2.';
+    }
+    this.keyboardButton.hidden = !canReturnToDemo || !this.requestKeyboardDemo;
   }
 
   setMode(mode: ControlMode): void {
@@ -141,6 +164,7 @@ export class MoonControlSystem {
     this.robotController.setEnabled(false);
     this.placementController?.setEnabled(false);
     this.robotButton.removeEventListener('click', this.activateRobot);
+    this.keyboardButton.removeEventListener('click', this.activateKeyboardDemo);
     this.cameraButton.removeEventListener('click', this.activateCamera);
     this.mapButton?.removeEventListener('click', this.activateMapEdit);
     this.recenterButton.removeEventListener('click', this.recenter);
@@ -149,6 +173,14 @@ export class MoonControlSystem {
 
   private readonly activateRobot = (): void => {
     this.setMode(ControlModes.ROBOT);
+    this.orbitControls.domElement?.focus({ preventScroll: true });
+  };
+
+  private readonly activateKeyboardDemo = (): void => {
+    const error = this.requestKeyboardDemo?.();
+    if (error) { this.keyboardStatus.textContent = error; return; }
+    this.setKeyboardBlock(null, false);
+    this.activateRobot();
   };
 
   private readonly activateCamera = (): void => {

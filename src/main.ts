@@ -34,6 +34,8 @@ import { AssetLoader, type AssetLoadEvent } from './assets/AssetLoader';
 import { AssetRegistry } from './assets/AssetRegistry';
 import { ControlModes, MOONTOLOGY_CONFIG } from './config/moontologyConfig';
 import { MoonControlSystem } from './controls/MoonControlSystem';
+import { useKeyboardDemo } from './controls/keyboardDemo';
+import { ProjectLinks } from './ui/ProjectLinks';
 import { HumanoidFleetPanel } from './debug/HumanoidFleetPanel';
 import { PlacementController } from './debug/PlacementController';
 import { PlacementPanel } from './debug/PlacementPanel';
@@ -115,6 +117,9 @@ status.textContent = 'Initializing Level 1…';
 if (!canvas || !operationsHost || !debugHost) {
   throw new Error('Required application elements could not be created.');
 }
+
+let designBookOpen = false;
+const projectLinks = new ProjectLinks(app, open => { designBookOpen = open; });
 
 const statusDock = DEBUG_UI
   ? new DockablePanel({
@@ -379,9 +384,18 @@ const renderLoopStarted = performanceGovernor.start((time) => {
     liveMapRelay?.state.tick();
     previousMapPosition.copy(go2Agent.agentRoot.position);
     go2Controller?.setExternalControlActive(
-      !!semanticHold || !!physicalMapHold || !ontology.canAnimate('GO2-01') || !!liveMapRelay?.state.ownsPose() || (go2TelemetryClient?.isDriving() ?? false) ||
+      designBookOpen || !!semanticHold || !!physicalMapHold || !ontology.canAnimate('GO2-01') || !!liveMapRelay?.state.ownsPose() || (go2TelemetryClient?.isDriving() ?? false) ||
       airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading',
     );
+    const transitioning = airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading';
+    const keyboardBlock = semanticHold ?? physicalMapHold ??
+      (!ontology.canAnimate('GO2-01') ? 'Go2 is held by the mission.' :
+        transitioning ? 'World transition in progress.' :
+          liveMapRelay?.state.ownsPose() ? 'Robot session owns Go2’s position. Keyboard movement is paused.' :
+            go2TelemetryClient?.isDriving() ? 'Robot telemetry controls Go2. Keyboard movement is paused.' : null);
+    moonControlSystem?.setKeyboardBlock(keyboardBlock,
+      !!liveMapRelay?.state.ownsPose() && !semanticHold && !physicalMapHold && !transitioning &&
+      !(go2TelemetryClient?.isDriving() ?? false));
     go2Controller?.update(deltaSeconds, go2Agent);
     if (!physicalMapHold && !liveMapRelay?.state.ownsPose() && airlockTransition?.getState() !== 'entering' && airlockTransition?.getState() !== 'loading') {
       go2TelemetryClient?.update(go2Agent.agentRoot, deltaSeconds);
@@ -517,6 +531,7 @@ const dispose = (): void => {
   disposed = true;
   liveMapRelay?.dispose();
   assetLoader.dispose();
+  projectLinks.dispose();
   unsubscribeOntologySelection();
   operationalOverlay.dispose();
   backgroundTraffic?.dispose();
@@ -729,6 +744,11 @@ const bootstrap = async (): Promise<void> => {
       orbitControls,
       robotController: go2Controller,
       placementController,
+      requestKeyboardDemo: () => liveMapRelay ? useKeyboardDemo(liveMapRelay.state, {
+        physicalHold: physicalMapHold,
+        legacyTelemetryActive: !!go2TelemetryClient?.getState().bridgeConnected || !!go2TelemetryClient?.isDriving(),
+        transitioning: airlockTransition?.getState() === 'entering' || airlockTransition?.getState() === 'loading',
+      }) : 'The authoritative map connection is unavailable.',
     });
 
     if (import.meta.env.DEV && launchQuery.has('layoutTest')) {

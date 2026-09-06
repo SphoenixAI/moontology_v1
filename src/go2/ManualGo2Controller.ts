@@ -16,6 +16,7 @@ const movementKeys = new Set([
 
 export class ManualGo2Controller implements Go2Controller {
   private readonly pressed = new Set<string>();
+  private readonly pendingTaps = new Set<string>();
   private readonly moveSpeed: number;
   private readonly turnSpeed: number;
   private enabled = true;
@@ -34,12 +35,14 @@ export class ManualGo2Controller implements Go2Controller {
       return;
     }
 
-    const moveInput =
-      Number(this.pressed.has('ArrowUp') || this.pressed.has('KeyW')) -
-      Number(this.pressed.has('ArrowDown') || this.pressed.has('KeyS'));
-    const turnInput =
-      Number(this.pressed.has('ArrowLeft') || this.pressed.has('KeyA')) -
-      Number(this.pressed.has('ArrowRight') || this.pressed.has('KeyD'));
+    // Keep a short tap until the next frame; keydown + keyup can both arrive
+    // between frames while the large map is rendering.
+    const active = (code: string) => this.pressed.has(code) || this.pendingTaps.has(code);
+    const moveInput = Number(active('ArrowUp') || active('KeyW')) -
+      Number(active('ArrowDown') || active('KeyS'));
+    const turnInput = Number(active('ArrowLeft') || active('KeyA')) -
+      Number(active('ArrowRight') || active('KeyD'));
+    this.pendingTaps.clear();
 
     if (turnInput !== 0) {
       target.rotateYaw(turnInput * this.turnSpeed * deltaSeconds);
@@ -81,6 +84,7 @@ export class ManualGo2Controller implements Go2Controller {
     }
 
     event.preventDefault();
+    if (!this.pressed.has(event.code)) this.pendingTaps.add(event.code);
     this.pressed.add(event.code);
   };
 
@@ -94,6 +98,7 @@ export class ManualGo2Controller implements Go2Controller {
 
   private readonly clear = (): void => {
     this.pressed.clear();
+    this.pendingTaps.clear();
   };
 
   private isEditableTarget(target: EventTarget | null): boolean {

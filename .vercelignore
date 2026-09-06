@@ -1,0 +1,13 @@
+.env*
+.git
+.cursor
+.codex
+.agents
+node_modules
+backups
+robot-bridge
+logs
+dist
+public/models
+public/worldlabs
+public/assets

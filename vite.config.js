@@ -1,7 +1,10 @@
 import { defineConfig } from 'vite';
 import { mapRelayPlugin } from './server/mapRelay.js';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  // Public builds must never inherit the local robot address or bridge credentials.
+  envDir: mode === 'public' ? false : undefined,
+  envPrefix: mode === 'public' ? 'MOONTOLOGY_PUBLIC_' : 'VITE_',
   server: { host: '127.0.0.1', port: 5173, strictPort: true },
   // Some source FBXs embed JPEGs with an `_jpg` suffix. Only normalize the
   // loader's MIME lookup; the files, image bytes and texture lookup keys stay intact.
@@ -30,4 +33,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

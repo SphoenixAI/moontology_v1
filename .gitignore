@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-public
 *.local
 __pycache__/
 *.py[cod]
@@ -28,3 +29,4 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+.vercel

@@ -1,0 +1,51 @@
+.project-links {
+  position: fixed; z-index: 35; bottom: 20px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px; padding: 5px;
+  border-radius: 14px;
+}
+.project-links a, .project-links button {
+  display: inline-flex; align-items: center; gap: 9px; padding: 11px 13px;
+  color: var(--glass-text); font: 500 11px/1.2 system-ui, sans-serif;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  border: 0; background: transparent; border-radius: 10px;
+}
+.project-links a:hover, .project-links button:hover { background: var(--glass-control-hover); }
+.project-links svg { width: 17px; height: 17px; color: var(--glass-champagne); }
+.project-links__divider { height: 20px; width: 1px; background: var(--glass-panel-border); }
+.design-book {
+  width: min(1060px, calc(100vw - 48px)); height: calc(100dvh - 48px); max-height: 1100px;
+  padding: 0; color: var(--glass-text); background: rgb(16 17 18 / 96%);
+  border: 1px solid var(--glass-panel-border); border-radius: 20px;
+  box-shadow: 0 32px 120px #000a; overflow: hidden;
+}
+.design-book[open] { display: flex; flex-direction: column; }
+.design-book::backdrop { background: rgb(0 0 0 / 66%); backdrop-filter: blur(14px); }
+.design-book__header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 25px; border-bottom: 1px solid var(--glass-panel-border); }
+.design-book__eyebrow { font-size: 9px; letter-spacing: .19em; color: var(--glass-champagne); }
+.design-book h1 { font: 400 24px/1.25 Georgia, serif; margin: 5px 0 0; }
+.design-book__actions { display: flex; align-items: center; gap: 20px; }
+.design-book a { color: var(--glass-text-secondary); text-decoration: none; font-size: 11px; }
+.design-book a:hover { color: var(--glass-text); }
+.design-book button { color: var(--glass-text); cursor: pointer; background: rgb(255 255 255 / 3%); border: 1px solid var(--glass-control-border); border-radius: 9px; min-width: 34px; height: 34px; }
+.design-book button:hover:not(:disabled) { background: var(--glass-control-hover); border-color: var(--glass-champagne); }
+.design-book button:disabled { opacity: .3; cursor: default; }
+.design-book button:focus-visible, .design-book a:focus-visible { outline: 1px solid var(--glass-champagne); outline-offset: 4px; }
+.design-book__reader { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.design-book__reader > p { margin: 30px; font-size: 13px; }
+.design-book__viewport { position: relative; flex: 1; overflow: auto; padding: 20px; overscroll-behavior: contain; }
+.design-book canvas { display: block; margin: 0 auto; box-shadow: 0 10px 32px #0007; }
+.design-book__status { position: absolute; inset: 20px auto auto 25px; font-size: 12px; color: var(--glass-champagne); }
+.design-book__toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 24px; border-top: 1px solid var(--glass-panel-border); }
+.design-book__toolbar > div { display: flex; gap: 10px; align-items: center; }
+.design-book__page { font: 11px/1 ui-monospace, monospace; color: var(--glass-champagne); min-width: 60px; text-align: center; }
+.design-book__hint { font-size: 10px; color: var(--glass-text-secondary); letter-spacing: .08em; }
+@media (max-width: 700px) {
+  .project-links { bottom: auto; top: 14px; left: auto; right: 16px; transform: none; }
+  .project-links a, .project-links button { padding: 10px; font-size: 10px; }
+  .design-book { width: calc(100vw - 16px); height: calc(100dvh - 16px); max-height: none; border-radius: 14px; }
+  .design-book__header { padding: 16px; gap: 8px; }
+  .design-book h1 { font-size: 21px; }
+  .design-book__actions { gap: 12px; }
+  .design-book__hint { display: none; }
+  .design-book__toolbar { padding: 12px 16px; }
+}
