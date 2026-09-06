@@ -102,3 +102,8 @@ emitted two Worker terminate rejections during that earlier transition. No
 current-world render failure was observed. Actual iPhone/Android hardware has
 not been connected to this test session, so phone-specific crash freedom is not
 claimed.
+
+A fresh Chrome tab using the mobile profile reported 575 MB tab memory after
+loading. A prior same-tab desktop-to-mobile navigation reported 3.0 GB and is
+not treated as a clean mobile baseline. These are desktop Chrome process-memory
+observations, not measurements of iOS/Android memory limits.
