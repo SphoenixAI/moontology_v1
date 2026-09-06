@@ -31,6 +31,6 @@ for (const path of files) {
     sha256: createHash('sha256').update(await readFile(source)).digest('hex') });
 }
 await writeFile('dist-public/map-assets-manifest.json', JSON.stringify({
-  note: 'Original full-detail assets. Upload approval and verified public URLs required before deployment.', assets,
+  note: 'Original full-detail assets. Deployment requires matching verified public upload receipts.', assets,
 }, null, 2) + '\n');
 console.log(`Public site built. ${assets.length} unchanged map assets require hosting (${Math.round(assets.reduce((sum, a) => sum + a.bytes, 0) / 1024 / 1024)} MiB).`);

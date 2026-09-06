@@ -584,6 +584,15 @@ const bootstrap = async (): Promise<void> => {
     renderer,
     scene,
     timer,
+    onProgress: event => {
+      const downloaded = `${Math.round(event.loaded / 1048576)} MB`;
+      const progress = event.lengthComputable && event.total > 0
+        ? `${Math.min(100, Math.round(event.loaded / event.total * 100))}%`
+        : downloaded;
+      status.textContent = event.lengthComputable && event.loaded >= event.total
+        ? 'Preparing lunar environment…'
+        : `Loading lunar environment · ${progress}`;
+    },
   });
   if (startInScene2) {
     applyWorldCalibration(world.root, SCENE_2_CALIBRATION);

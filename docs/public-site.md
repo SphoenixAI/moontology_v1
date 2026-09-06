@@ -5,8 +5,10 @@ The existing map includes a glass project toolbar with the GitHub mark, a link t
 renders the supplied five-page PDF with page navigation, zoom, fit-width, close,
 and an unchanged PDF download. Opening the reader suspends virtual keyboard input.
 
-Vercel project: `sphoenixs-projects/moontology`. The project has been created, but
-**no public deployment has been published**. The GitHub repository remains private;
+Public site: **https://moontology.vercel.app**
+
+Vercel project: `sphoenixs-projects/moontology`. Production is published using
+the Vercel CLI and the Build Output API. The GitHub repository remains private;
 Vercel could not attach its Git integration, so automatic deployment from main is
 not connected. The GitHub link is usable by viewers who have repository access.
 
@@ -23,20 +25,62 @@ the eleven large map assets (522 MiB): two full-detail humanoid GLBs containing
 all five action clips, two animated/background vehicles, three equipment GLBs,
 and the two World Labs splat/collider pairs.
 
-## Remaining publication step
+## Asset storage and repeat deployment
 
-Automatic approval review rejected creation of a public `moontology-assets`
-Vercel Blob store because publishing original meshes/textures from the private
-repository requires explicit approval. No store or asset upload was performed.
+The user explicitly approved public asset upload on September 5, 2026.
+`moontology-assets` is a public Vercel Blob store in `sfo1`, ID
+`store_w1Q22HcAFGF7ppYH`, linked to this project's production environment.
+`docs/public-assets.json` records all eleven public URLs, byte lengths, and source
+SHA-256 hashes. The original files total 547,775,841 bytes. Their URLs include
+source hash prefixes, so updates cannot overwrite an earlier source version.
 
-After approval, publish the manifest's eleven unchanged files to the named public
-store, verify their URLs and byte lengths, and configure production redirects for
-their existing `/models/…` and `/worldlabs/…` paths. Keep `/models/go2/…` local to
-the static deployment. Package `dist-public/` with those routes using Vercel's
-Build Output API, then deploy the prebuilt output and verify the actual public
-map, keyboard movement, all assets, and reader. Do not deploy this intermediate
-build before its large-asset routes are configured.
+The site redirects each existing model/world URL to its verified Blob URL.
+The official Go2 files and PDF remain in the static deployment. This keeps the
+static package within the current Hobby deployment limit without reducing mesh
+detail, embedded texture resolution, or animation clips.
+
+To publish code changes with the same assets:
+
+```sh
+npm run build:public
+node scripts/prepare-vercel-output.mjs
+vercel deploy --prebuilt --prod --yes --scope sphoenixs-projects
+```
+
+If a source asset changes, first pull the production environment to a private
+temporary file using the authenticated Vercel CLI, then run
+`node scripts/upload-public-assets.mjs /path/to/private-production.env`.
+The script checks local hashes, resumes existing uploads, and verifies both Blob
+metadata and unauthenticated public response sizes. Remove the temporary
+credential file when finished. Never commit credentials or supply them in argv.
+
+The output preparation step refuses missing or mismatched asset receipts. Use
+the prebuilt deployment command above; a plain source deployment does not include
+these asset redirects. Keep the generated output and original source asset tree
+available on the deployment laptop. New public visitors receive loading progress
+while the full-detail map downloads, and model downloads have a longer production
+inactivity timeout than the local presentation. A GLB download that is still
+receiving data is allowed to finish; the timeout applies to a stalled transfer.
 
 Original FBX/GLB sources and all embedded texture pixels stay unchanged. No
 physical controller, calibration, STOP behavior, or physical motion is changed
 by publication.
+
+## Verified production release
+
+Deployment `dpl_Cp5wtJrg5iFFNT7zpUL9kaEzsJxk` reached `READY`, with the canonical
+domain assigned to `https://moontology.vercel.app`. Its immutable deployment URL
+is `https://moontology-71plfsrgg-sphoenixs-projects.vercel.app`.
+
+Verified unauthenticated access to all eleven asset redirects and their original
+byte lengths. A full public lunar SPZ download and the PDF also matched their
+source SHA-256 hashes. The initial SPZ download took about 154 seconds on the
+test connection; full-detail first loads can take several minutes and subsequent
+visits benefit from the immutable asset cache.
+
+Browser verification confirmed the lunar scene, five playing humanoid clips
+(H01/H04/H02/H03/H06), running background traffic, Follow Go2 keyboard movement,
+the GitHub link, and reader pages 1 through 5 with zoom/fit and correct navigation
+boundaries. The virtual approach distance changed from 5.2 m to 4.4 m after arrow
+key input. No physical controller was contacted. Build, focused lint, keyboard
+safety tests, and download inactivity/error tests passed.

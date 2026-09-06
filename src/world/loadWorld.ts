@@ -40,6 +40,7 @@ interface LoadWorldOptions {
   renderer: WebGLRenderer;
   scene: Scene;
   timer: Timer;
+  onProgress?: (event: ProgressEvent) => void;
 }
 
 const formatError = (error: unknown): string =>
@@ -104,6 +105,7 @@ export const loadWorld = async ({
   renderer,
   scene,
   timer,
+  onProgress,
 }: LoadWorldOptions): Promise<WorldHandle> => {
   const worldRoot = new Group();
   worldRoot.name = 'world-root';
@@ -168,6 +170,7 @@ export const loadWorld = async ({
       const isRadLodFile = /\.rad(?:$|\?)/i.test(config.visualSrc);
       splat = new SplatMesh({
         url: config.visualSrc,
+        onProgress,
         lod: isRadLodFile ? undefined : true,
         raycastable: false,
       });

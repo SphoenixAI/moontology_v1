@@ -21,6 +21,7 @@ import type {
 import type { LevelAssetConfig } from '../levels/types';
 import { MOONTOLOGY_CONFIG } from '../config/moontologyConfig';
 import { AssetRegistry, type LoadedAsset } from './AssetRegistry';
+import { withDownloadTimeout } from './withDownloadTimeout';
 import {
   placeObjectBottomAtY,
   scaleObjectToHeight,
@@ -308,11 +309,10 @@ export class AssetLoader {
     });
 
     if (extension === 'glb' || extension === 'gltf') {
-      const gltf = await withTimeout(
-        this.gltfLoader.loadAsync(src),
-        timeoutMs,
-        `Asset source "${src}" timed out`,
-      );
+      const message = `Asset source "${src}" timed out`;
+      const gltf = await (import.meta.env.PROD
+        ? withDownloadTimeout(onProgress => this.gltfLoader.loadAsync(src, onProgress), timeoutMs, message)
+        : withTimeout(this.gltfLoader.loadAsync(src), timeoutMs, message));
       console.info('[assets] source loaded', {
         src,
         extension,

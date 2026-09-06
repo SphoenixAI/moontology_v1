@@ -28,8 +28,9 @@ export const MOONTOLOGY_CONFIG = {
   loading: {
     worldSplatTimeoutMs: 8000,
     worldColliderTimeoutMs: 10000,
-    assetTimeoutMs: 30000,
-    go2TimeoutMs: 15000,
+    // Public visitors download the original full-detail assets over the internet.
+    assetTimeoutMs: import.meta.env.PROD ? 120000 : 30000,
+    go2TimeoutMs: import.meta.env.PROD ? 60000 : 15000,
     loadAnimatedHumanoids:
       import.meta.env.VITE_LOAD_HEAVY_ANIMATED_FBX !== 'false',
   },
